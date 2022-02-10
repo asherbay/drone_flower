@@ -2,12 +2,15 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
-import reportWebVitals from './reportWebVitals';
+import reportWebVitals from './reportWebVitals'; 
+import DroneProvider from './providers/DroneProvider'
 
 ReactDOM.render(
-  <React.StrictMode>
+  // <React.StrictMode>
+  <DroneProvider>
     <App />
-  </React.StrictMode>,
+  </DroneProvider>,
+  /* </React.StrictMode>, */
   document.getElementById('root')
 );
 
