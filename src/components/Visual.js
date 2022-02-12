@@ -7,7 +7,7 @@ import {Vector} from "p5"
 //since pulse as a class hasn't been working, try pulses as an array of objects {pulseLifespan, pulseAge, magnitude, target color, id}
 const Visual = () =>{
     // const {getDrone, drones, setDrones} = useContext(DroneContext)
-    const {getDrone, drones} = useContext(DroneContext)
+    const {getDrone, drones, newZone} = useContext(DroneContext)
     // const [loaded, setLoaded] = useState(false)
     // const [canvasCreated, setCanvasCreated] = useState(false)
     // const [canvas, setCanvas] = useState(null)
@@ -15,6 +15,9 @@ const Visual = () =>{
     
     const [renderNum, setRenderNum] = useState(0)
     
+    const infoText = "Drone Zone is an audiovisual experience generator. Watch and listen as the colors and sounds evolve endlessly. Interact by clicking shapes or changing parameters in the 🎛️ menu."
+    
+
     let droneNodes = []
 
 
@@ -48,6 +51,11 @@ const Visual = () =>{
         let age = 0        
 
         const frameRate = 25
+
+
+        
+
+
         class DroneNode {
             constructor(x, y, r, id) {
                 this.position = [x, y];
@@ -202,17 +210,9 @@ const Visual = () =>{
                 // let filterLfoPos = this.droneSource.filterLfoMeter.getValue()
                 // let filterLfoLvl = this.droneSource.params.filterLfoLvl.value
                 
-                // if(this.pulseInterval<=0){
-                //     this.pulseInterval = p5.map(freq, 35, 500, 25, 1)
-                //     new Pulse(outputLvl * 5 + 1.3, p5.map(freq, 35, 2300, 30, 5), this.id)
-                //     // console.log("pulse interval: " + this.pulseInterval + " " + outputLvl * 4)
-                // } else if(this.pulseInterval>0){
-                //     this.pulseInterval--
-                // }
-
-               // this.rx = (outputLvl * 70 ) * 20. + 20 // outputLvl->width
                 
-                 this.rx = p5.map(outputLvl, 0., 1., width/(10 + (this.seedX -0.75) * 10), width/(3 + (this.seedY -0.75) * 3.5))
+                
+                this.rx = p5.map(outputLvl, 0., 1., p5.windowWidth/(9 + (this.seedX -0.75) * 10), p5.windowWidth/(3 + (this.seedY -0.75) * 3.5))
                 
                 
                     // let maxAlpha =  p5.map(width/(10 + (this.seedX -0.75) * 7, width/11.75, width/4, 250, 200))
@@ -398,7 +398,7 @@ const Visual = () =>{
         else {
             return
         }
-       console.log("VOICE: " + voice.id + " PARAM: " + param + " TO: " + val + " OVER: " + duration + " secs")
+    //    console.log("VOICE: " + voice.id + " PARAM: " + param + " TO: " + val + " OVER: " + duration + " secs")
         voice.params[param].linearRampTo(val, duration)
         
         
@@ -484,7 +484,7 @@ const Visual = () =>{
 
                     
                 p5.pop()
-                this.position = [p5.constrain(this.position[0], 0, width*0.5), p5.constrain(this.position[1], 0, height*0.5)]
+                this.position = [p5.constrain(this.position[0], 0, p5.windowWidth*0.5), p5.constrain(this.position[1], 0, p5.windowHeight*0.5)]
                 
                 this.left = p5.min(this.shapeVar.concat(this.shapeVar2).map((sv)=>sv.x))
                 this.right = p5.max(this.shapeVar.concat(this.shapeVar2).map((sv)=>sv.x))
@@ -556,12 +556,12 @@ const Visual = () =>{
         }
 
         p5.mouseClicked = () => {
-            console.log(" clicked!! " + p5.mouseX, p5.mouseY)
+            // console.log(" clicked!! " + p5.mouseX, p5.mouseY)
             droneNodes.forEach((dn)=>{
                 console.log(dn.left, dn.right, dn.top, dn.bottom,)
                 if(p5.mouseX>=dn.left && p5.mouseX<=dn.right && p5.mouseY>=dn.top && p5.mouseY<=dn.bottom){
                     if(dn.droneSource.playing===false){
-                        console.log("started!")
+                        // console.log("started!")
                         dn.droneSource.setPlaying(true)
                         dn.newNoteTransTime = Math.floor(Math.random() * 40) + 20
                     } else {
@@ -578,34 +578,156 @@ const Visual = () =>{
 
                 }
             })
+            if(info.attribute('status')!=="focus"){
+                infoBubble.hide()
+            }
         }
 
+        
+        p5.windowResized = () => {
+            p5.resizeCanvas(p5.windowWidth, p5.windowHeight)
+            droneNodes.forEach((dn)=>{
+                dn.position = [p5.windowWidth/2, p5.windowHeight/2]
+            })
+        }
+
+        p5.uiButton = (xPos, text,)=>{
+            let button = p5.createP(text)
+            let size = 40
+            button.style('text-align', 'justify')
+            button.style('color', 'rgba(255, 255, 255, 255)')
+            // button.style('background-color', 'rgba(255, 255, 255, 0)')
+            
+
+            button.position(xPos, 5)
+            // button.size(size, size)
+            button.style('font-size', size + "pt")
+            button.style('padding-right', "8px")
+            button.style('padding-left', "8px")
+            button.style('border-radius', "8px")
+
+            button.attribute('ogSize', size)
+            button.attribute('maxScale', 1.3)
+            button.attribute('status', 'normal')
+            button.attribute('motionTimer', 0)
+            button.attribute('motionTime', 3)
+            button.mouseOver(()=>{
+                button.style("background-color", "rgba(255, 255, 255, 0.2)")
+                
+                button.attribute('status', 'focus')
+                button.attribute('motionTimer', 0)
+                document.body.style.cursor = "pointer"
+            })
+            button.mouseOut(()=>{
+                button.style("background-color", "transparent")
+                button.attribute('status', 'defocus')
+                button.attribute('motionTimer', 0)
+                document.body.style.cursor = "auto"
+            })
+            return button
+        }
+
+        //pre-declaring buttons for bigger scope
+        let reset
+        let controls
+        let info 
+        let buttons = []
+
+        let infoBubble
+        
         p5.setup = () => {
             p5.frameRate(frameRate)
+            reset = p5.uiButton(50, '🔄')
+            controls = p5.uiButton(150, '🎛️')
+            info = p5.uiButton(250, 'ℹ️')
+            buttons.push(reset, controls, info)
+            
+            infoBubble = p5.createP(infoText)
+            infoBubble.position(info.position().x, info.position().y + 50)
+            infoBubble.class = "speech"
+            infoBubble.attribute("position", "relative")
+            infoBubble.style("background-color", "white")
+            infoBubble.hide()
+            
+          
+            
+            
+            reset.mousePressed(newZone)
             if(renderNum===1){
                 for(let i=0; i<drones.length; i++){
-                    let newNode = new DroneNode((Math.random() * width/5) + width/2, (Math.random() * height/5) + height/2, Math.random()*20+20, i)
+                    let newNode = new DroneNode((Math.random() * p5.windowWidth/5) + p5.windowWidth/2, (Math.random() * p5.windowHeight/5) + p5.windowHeight/2, Math.random()*20+20, i)
                     droneNodes.push(newNode)
                 }  
                 console.log("canvas created")
-                return p5.createCanvas(width, height)
+                return p5.createCanvas(p5.windowWidth, p5.windowHeight)
             } else if(renderNum<2){ 
                 setRenderNum(renderNum + 1)
             }
+
+            
+            
         };
 
+        let masterLvl
         p5.draw = () => {
             // p5.blendMode(p5.SUBTRACT)
-            let masterLvl
+            
             let fadeColor = bgColor
+            let buttonColor = p5.color(255, 255, 255, 35)
+            let buttonTextColor = buttonColor
             p5.background(bgColor);
-            droneNodes.forEach((d)=>{
+            if(p5.mouseX<=p5.windowWidth/2 && p5.mouseY<=p5.windowHeight/2){
+                let dist = p5.dist(p5.mouseX, p5.mouseY, 0, 0)
+               buttonColor.setAlpha(p5.map(dist, 0, Math.sqrt(Math.pow(p5.windowWidth/2, 2) + Math.pow(p5.windowHeight/2, 2)), 255, 35))
+                
+            }
+            
+            info.mousePressed(()=>{infoBubble.show()})
+
+            let currentSize
+            buttons.forEach((b)=>{
+                let timer = parseInt(b.attribute('motionTimer'))
+                let time = parseInt(b.attribute('motionTime'))
+                let ogSize = parseInt(b.attribute('ogSize'))
+                let maxScale = parseFloat(b.attribute('maxScale'))
+                if(b.attribute('status')==="focus"){
+                    
+                    if(timer<time){
+                        currentSize = p5.map(timer, 0, time, ogSize, ogSize*maxScale)
+                        // b.style("font-size", currentSize+"pt")
+                        b.attribute('motionTimer', timer+1)
+                        console.log(maxScale)
+                    } 
+                } else if(b.attribute('status')==="defocus"){
+                    if(timer<time){
+                        currentSize = p5.map(timer, 0, time, ogSize*maxScale, ogSize)
+                        // b.style("font-size", currentSize+"pt")
+                        
+                        b.attribute('motionTimer', timer+1)
+                        // console.log(b.attribute('motionTimer'))
+                    } else {
+                        
+                        b.attribute('status', 'normal')
+                        b.attribute('motionTimer', 0)
+                    }
+                }
+                buttonTextColor.setAlpha(p5.alpha(buttonColor))
+                b.style('color', buttonTextColor.toString())
+                // b.style('background-color', buttonColor.toString())
+            })  
+            droneNodes.forEach((d, i)=>{
+                if(i===0 && d.age%3===0){
+                    masterLvl = d.droneSource.masterMeter.getValue()
+                }
                 d.display()
-            masterLvl = d.droneSource.masterMeter.getValue()
             })
-            fadeColor.setAlpha(p5.map(masterLvl, 0., 0.2, 150, 0))
+            
+
+            
+
+            fadeColor.setAlpha(p5.map(masterLvl, 0., 0.2, 135, 0))
             p5.fill(fadeColor)
-            p5.rect(0, 0, width, height)
+            p5.rect(0, 0, p5.windowWidth, p5.windowHeight)
 
             // p5.keyPressed = () => {
             //     if (p5.keyCode === p5.LEFT_ARROW) {
@@ -615,11 +737,16 @@ const Visual = () =>{
             //         droneNodes.forEach((d)=>{d.wobblyCircle()})
             //     }
             // }
-            
+            // if(p5.mouseX<=240 && p5.mouseY <=80){
+            //         document.body.style.cursor = "pointer"
+            //     } else {
+            //         document.body.style.cursor = "auto"
+            //     }
         };
     }
             return (
                 <div>
+                    {/* <button onClick={newZone}>RELOAD</button> */}
                     {<ReactP5Wrapper key={renderNum} sketch={sketch} />}
                 </div>
             )

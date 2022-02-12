@@ -12,11 +12,11 @@ import {DroneContext} from '../providers/DroneProvider'
     )
 
 fmLfoLfoLvl: fmLfoLfo.amplitude,
-                fmLfoLfoRate: fmLfoLfo.frequency,
-                fmLfoDepthLfoLvl: fmLfoDepthLfoLvl.amplitude,
-                fmLfoDepthLfoRate
+        fmLfoLfoRate: fmLfoLfo.frequency,
+        fmLfoDepthLfoLvl: fmLfoDepthLfoLvl.amplitude,
+        fmLfoDepthLfoRate
 */
-const Ensemble = React.memo(() => {
+const Ensemble = () => {
     const drones = useContext(DroneContext)
     const [numVoices, setNumVoices] = useState(0)
     const [voices, setVoices] = useState([])
@@ -74,7 +74,7 @@ const Ensemble = React.memo(() => {
                     let duration = Math.random() * 4. + 0.5
                     let delay = Math.random() * 3. + 0.5
 
-                    let glide = (Math.random()<0.07)
+                    let glide = (Math.random()<0.00)
                     // console.log("glide? " + duration)
                     if(glide){
                         v.freq.exponentialRampTo(freq, duration, "+" + delay)
@@ -100,32 +100,32 @@ const Ensemble = React.memo(() => {
                         // console.log("ATK TIME: " + "+" + (duration + delay))
                         
                         // console.log("master vol on attack: " + v.masterMeter.getValue())
-                        if(v.meter.getValue()<=0.2){
-                            v.synth.triggerAttack(freq, "+0.01", 1) 
-                            console.log("first one!") //FIX THIS SO IT STARTS INSTANTLY
-                        }
-                        else { 
-                            console.log("normal attack")
-                            // v.synth.envelope.cancel("+" + (duration + delay*0.9))
+                        // if(v.meter.getValue()<=0.2){
+                        //     v.synth.triggerAttack(freq) 
+                        //     console.log("first one!") //FIX THIS SO IT STARTS INSTANTLY
+                        // }
+                        // else { 
+                        //     console.log("normal attack")
+                            v.synth.envelope.cancel("+" + (duration + delay*0.9))
                             // v.synth.triggerAttack(freq, "+" + (duration + delay)) 
-                            v.synth.triggerAttack(freq, "+" + (duration + delay)*0) 
-                        }
+                            v.synth.triggerAttack(freq, "+" + (duration + delay)) 
+                        // }
 
-                        if(v.envStatusTimeout){
-                            clearTimeout(v.envStatusTimeout)
-                        }
+                        // if(v.envStatusTimeout){
+                        //     clearTimeout(v.envStatusTimeout)
+                        // }
 
-                        v.envStatusTimeout = setTimeout(()=>{ 
-                            v.envStatus = "atk"
-                            console.log(v.id + " atk!")
-                        }, (duration + delay)*1000)
+                        // v.envStatusTimeout = setTimeout(()=>{ 
+                        //     v.envStatus = "atk"
+                        //     // console.log(v.id + " atk!")
+                        // }, (duration + delay)*1000)
                         
-                        console.log(v.id + " atk!")
+                        // // console.log(v.id + " atk!")
                         
-                        v.envStatusTimeout = setTimeout(()=>{ 
-                            v.envStatus = "sus"
-                            console.log(v.id + " sus!")
-                        }, (duration + delay + v.synth.envelope.attack)*1000)
+                        // v.envStatusTimeout = setTimeout(()=>{ 
+                        //     v.envStatus = "sus"
+                        //     // console.log(v.id + " sus!")
+                        // }, (duration + delay + v.synth.envelope.attack)*1000)
 
                         v.currentNote = freq
                         
@@ -148,17 +148,33 @@ const Ensemble = React.memo(() => {
     }, [numVoices])
 
     const resetContext = () => {
+        Tone.getContext().dispose()
         Tone.setContext(new AudioContext({ sampleRate: 24000, lookAhead: 3.0}))
         Tone.start()
     }
+    const newEnsemble = () => {
+        // clearNodes()
+        resetContext()
+        setPlaying(false)
+        setNumVoices(Math.floor(Math.random() * 3 + 2))
+        // window.location.reload(true)
+        console.log("new ens!")
+    }
 
-    const randomMod = () => {
+    const randomMod = (voice=null, param=null, duration=null) => {
         if(voices.length>0 && playing){
-            let voice = voices[Math.floor(Math.random() * voices.length)]
+            if(!voice){
+                voice = voices[Math.floor(Math.random() * voices.length)]
+            }
             // let numModVoices = Math.floor(Math.random() * voices.length)
             // let modVoices = INTEGRATE WITH MULTIPLE VOICES LATER
-        let param = Object.keys(voice.params)[Math.floor(Math.random() * Object.keys(voice.params).length)]
-        let duration = Math.random() * 4. + 0.5 //replace with duration range state later (maybe 1 range for long gestures, one for short)
+            if(!param){
+                param = Object.keys(voice.params)[Math.floor(Math.random() * Object.keys(voice.params).length)]
+            }
+            if(!duration){
+                duration = Math.random() * 4. + 0.5 //replace with duration range state later (maybe 1 range for long gestures, one for short)
+            }
+       
         let val 
         
         if(param==="cutoff"){
@@ -498,7 +514,9 @@ const Ensemble = React.memo(() => {
                 envStatusTimeout: null,
                 masterMeter: masterMeter,
                 setPlaying: setPlaying,
-                playing: false
+                playing: false,
+                randomMod: randomMod,
+                newEnsemble: newEnsemble
             })
          }
         
@@ -523,7 +541,8 @@ const Ensemble = React.memo(() => {
                 setModLoopId(setInterval(randomMod, 750))
                 newChord()
                 voices.forEach((v)=>{
-                    v.synth.triggerAttack(v.freq.value)
+                    v.synth.envelope.cancel()
+                    v.synth.triggerAttack(v.freq.value, "+0.1")
                 })
                 // setTimeout(newChord, 500)
                 // console.log("attack?")
@@ -719,5 +738,5 @@ const Ensemble = React.memo(() => {
         </div>
 
     )
-})
+}
 export default Ensemble
