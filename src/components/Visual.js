@@ -14,12 +14,12 @@ const Visual = () =>{
     const harmonicities = [1., 1., 1., 1., 1.25, 1.3333, 1.5, 2., 2., 2., 4., 0.666, 3., 2.5, 0.5, 0.5, 0.75]
     
     const [renderNum, setRenderNum] = useState(0)
-    
-    const infoText = "Drone Zone is an audiovisual experience generator. Watch and listen as the colors and sounds evolve endlessly. Interact by clicking shapes or changing parameters in the 🎛️ menu."
+    // const [homogeneity, setHomogeneity] = useState(0)
+    const infoText = "Drone Zone is an audiovisual experience generator. Watch and listen as the shapes and sounds evolve endlessly. Interact by clicking shapes or changing parameters in the 🎛️ menu.\n\n Made with p5.js (visuals) and Tone.js (sound)"
     
 
     let droneNodes = []
-
+    let volumeSlider
 
     useEffect(()=>{
         console.log("wrapper returned")
@@ -44,7 +44,7 @@ const Visual = () =>{
     
     const sketch = (p5) =>{
         const rndColorVal = () => {return Math.floor(Math.random()*256)}
-        const blendingModes = [p5.BLEND,]//p5.HARD_LIGHT,] //p5.LIGHTEST, p5.HARD_LIGHT] //p5.DIFFERENCE, p5.EXCLUSION,]// p5.HARD_LIGHT,]// p5.BURN,]
+        const blendingModes = [p5.BLEND, p5.HARD_LIGHT,] //p5.LIGHTEST, p5.HARD_LIGHT] //p5.DIFFERENCE, p5.EXCLUSION,]// p5.HARD_LIGHT,]// p5.BURN,]
         let width = p5.windowWidth
         let height = p5.windowHeight
         let bgColor = p5.color(rndColorVal(), rndColorVal(), rndColorVal(), 255)    
@@ -76,6 +76,10 @@ const Visual = () =>{
                 this.seedY = Math.random()
                 this.age = 0
                 
+                this.modInterval = Math.floor(Math.random() * frameRate * 1.5) + 3
+                this.ogModInterval = this.modInterval
+                
+
                 this.left = 0
                 this.right = 0
                 this.top = 0
@@ -196,12 +200,17 @@ const Visual = () =>{
             display() {
                 p5.blendMode(this.blendingMode)
                 this.age++
+                if(this.age%this.modInterval===0){
+                    let dur = Math.random() * p5.map(rateSlider.value(), 0, 100, 8, 1.5)
+                    
+                    this.randomMod(dur)
+                    console.log(`${this.id} mod triggered over ${dur} secs`)
+                } else if (Math.random()*50<(rateSlider.value()/100)){ 
+                    this.droneSource.voiceStep(this.droneSource, depthSlider.value()/100)
+                }
                 p5.noStroke();
                 
-                if(Math.random()>0.998){
-                    p5.shuffle(droneNodes, true)
-                    console.log("new order")
-                }
+                
 
                 let outputLvl = p5.lerp(this.prevLvl, this.droneSource.meter.getValue(), this.reactivity)
                 this.outputLvl = outputLvl
@@ -387,6 +396,10 @@ const Visual = () =>{
             voice.params[param] = Math.random()
             return
         }
+        else if(param==="chorusFb"){
+            val = Math.random()
+            console.log("chorusFb gonna be " + val)
+        }
 
         else if(param==="delayWet"){
             val = Math.random() * 0.8
@@ -398,6 +411,8 @@ const Visual = () =>{
         else {
             return
         }
+
+        // val = val * p5.map(depthSlider.value(), 0, 100, )
     //    console.log("VOICE: " + voice.id + " PARAM: " + param + " TO: " + val + " OVER: " + duration + " secs")
         voice.params[param].linearRampTo(val, duration)
         
@@ -557,30 +572,42 @@ const Visual = () =>{
 
         p5.mouseClicked = () => {
             // console.log(" clicked!! " + p5.mouseX, p5.mouseY)
+            uiPopups.forEach((pu)=> {
+                // console.log("hover attr: " + typeof pu.attribute("hover"))
+                if(pu.attribute("hover")=="false"){
+                    // console.log("hide it!")
+                    pu.hide()
+                }
+            })
+
+            if(Math.random()>0.83){
+                p5.shuffle(droneNodes, true)
+                console.log("new order")
+            }
             droneNodes.forEach((dn)=>{
-                console.log(dn.left, dn.right, dn.top, dn.bottom,)
+                // console.log(dn.left, dn.right, dn.top, dn.bottom,)
                 if(p5.mouseX>=dn.left && p5.mouseX<=dn.right && p5.mouseY>=dn.top && p5.mouseY<=dn.bottom){
                     if(dn.droneSource.playing===false){
                         // console.log("started!")
                         dn.droneSource.setPlaying(true)
+                        dn.droneSource.synth.triggerAttack(dn.droneSource.synth.oscillator.frequency.value)
                         dn.newNoteTransTime = Math.floor(Math.random() * 40) + 20
                     } else {
                         console.log(dn.id + " twiddled!")
                         dn.newNoteTransTime = Math.floor(Math.random() * 40) + 20
-                        let numMods = Math.floor(Math.random() * 10) + 9
+                        let numMods = Math.floor(Math.random() * 13) + 7
                         console.log(numMods + " mods from click!")
                         for (let n = 0 ; n<numMods; n++){
                             dn.randomMod((dn.newNoteTransTime / frameRate) / (Math.random() * 5)+1)
-                        }
+                        }   
                         return
                         }
                     
 
                 }
             })
-            if(info.attribute('status')!=="focus"){
-                infoBubble.hide()
-            }
+            
+            
         }
 
         
@@ -624,7 +651,70 @@ const Visual = () =>{
                 button.attribute('motionTimer', 0)
                 document.body.style.cursor = "auto"
             })
-            return button
+            return button 
+        }
+
+        let uiPopups = []
+        p5.uiPopup = (originElement, text) => {
+            let popup = p5.createP(text)
+            let popupColor = p5.color(255, 255, 255, 80)
+            let textColor  = p5.color(0, 0, 0, 170)
+            
+            popup.position(originElement.position().x, originElement.position().y + 50)
+            popup.class("speech")
+            popup.style("font-size", "23pt")
+            popup.style("width", "20vw")
+            popup.style("padding", "17px")
+            popup.style("background-color", popupColor)
+            popup.style("color", textColor)
+            popup.style("text-align", "left")
+            popup.style("border-radius", "5%")
+            popup.attribute("originElement", originElement)
+            popup.attribute("hover", false)
+            originElement.mousePressed(()=>{
+                popup.show()
+                
+            })
+            
+            popup.mouseOver(()=>{
+                popup.attribute("hover", true)
+
+            })
+             popup.mouseOut(()=>{
+                popup.attribute("hover", false)
+
+            })
+
+
+            originElement.mouseOver(()=>{
+                popup.attribute("hover", true)
+                document.body.style.cursor = "pointer"
+                originElement.style("background-color", "rgba(255, 255, 255, 0.2)")
+                // console.log("hovering! " + popup.attribute("hover"))
+            })
+            originElement.mouseOut(()=>{
+                popup.attribute("hover", false)
+                document.body.style.cursor = "auto"
+                originElement.style("background-color", "transparent")
+                // console.log("not hovering! " + popup.attribute("hover"))
+            })
+            popup.hide()
+            
+            uiPopups.push(popup)
+            return popup
+        }
+
+        p5.controlParam = (container, minText, maxText) => {
+            let div = p5.createDiv()
+            div.style('display', 'flex')
+            let slider = p5.createSlider(0., 100.)
+            let maxLabel = p5.createP(maxText)
+            let minLabel = p5.createP(minText)
+            div.child(minLabel)
+            div.child(slider)
+            div.child(maxLabel)
+            container.child(div)
+            return slider
         }
 
         //pre-declaring buttons for bigger scope
@@ -634,7 +724,11 @@ const Visual = () =>{
         let buttons = []
 
         let infoBubble
-        
+        let controlMenu
+
+        let volSlider
+        let rateSlider
+        let depthSlider
         p5.setup = () => {
             p5.frameRate(frameRate)
             reset = p5.uiButton(50, '🔄')
@@ -642,12 +736,36 @@ const Visual = () =>{
             info = p5.uiButton(250, 'ℹ️')
             buttons.push(reset, controls, info)
             
-            infoBubble = p5.createP(infoText)
-            infoBubble.position(info.position().x, info.position().y + 50)
-            infoBubble.class = "speech"
-            infoBubble.attribute("position", "relative")
-            infoBubble.style("background-color", "white")
-            infoBubble.hide()
+            infoBubble = p5.uiPopup(info, infoText)
+
+
+            controlMenu = p5.uiPopup(controls, "")
+
+            volSlider = p5.controlParam(controlMenu, "🔇", "🔊")
+            depthSlider = p5.controlParam(controlMenu, "💧", "🌊")
+            rateSlider = p5.controlParam(controlMenu, "☁️", "🌪️")
+            // volControl = p5.createDiv()
+            // volControl.style('display', 'flex')
+            // volumeSlider = p5.createSlider(0., 100.)
+            // maxVolLabel = p5.createP("🔊")
+            // minVolLabel = p5.createP("🔇")
+            // volControl.child(minVolLabel)
+            // volControl.child(volumeSlider)
+            // volControl.child(maxVolLabel)
+            // controlMenu.child(volControl)
+            // let popupColor = p5.color(255, 255, 255, 80)
+            // let textColor  = p5.color(0, 0, 0, 170)
+            // infoBubble = p5.createP(infoText)
+            // infoBubble.position(info.position().x, info.position().y + 50)
+            // infoBubble.class("speech")
+            // infoBubble.style("font-size", "23pt")
+            // infoBubble.style("width", "20vw")
+            // infoBubble.style("padding", "17px")
+            // infoBubble.style("background-color", popupColor)
+            // infoBubble.style("color", textColor)
+            // infoBubble.style("text-align", "left")
+            // infoBubble.style("border-radius", "5%")
+            // infoBubble.hide()
             
           
             
@@ -655,6 +773,7 @@ const Visual = () =>{
             reset.mousePressed(newZone)
             if(renderNum===1){
                 for(let i=0; i<drones.length; i++){
+                    
                     let newNode = new DroneNode((Math.random() * p5.windowWidth/5) + p5.windowWidth/2, (Math.random() * p5.windowHeight/5) + p5.windowHeight/2, Math.random()*20+20, i)
                     droneNodes.push(newNode)
                 }  
@@ -668,13 +787,53 @@ const Visual = () =>{
             
         };
 
+        p5.setRateParams = (val) => {
+            if(droneNodes.length>0){
+                droneNodes.forEach((dn)=>{
+                    dn.droneSource.rateControlParams.forEach((param)=>{
+                        if(param.type==="signal"){
+                            param.param.linearRampTo(p5.map(val, 0, 100, param.min, param.max), 0.25)
+                        }
+                    })
+                })
+            }
+        }
+
+        p5.setDepthParams = (val) => {
+            if(droneNodes.length>0){
+                droneNodes.forEach((dn)=>{
+                    dn.modInterval = p5.map(val, 0, 100, dn.ogModInterval * 2, dn.ogModInterval / 4)
+                    dn.droneSource.depthControlParams.forEach((param)=>{
+                        let targetVal = p5.map(val, 0, 100, param.min, param.max)
+                        if(param.type==="signal"){
+                            console.log()
+                            param.param.linearRampTo(targetVal, 0.25)
+                        } else {
+                            param.param = targetVal
+                        }
+                    })
+                })
+            }
+        }
+
+
         let masterLvl
         p5.draw = () => {
             // p5.blendMode(p5.SUBTRACT)
+            if(volSlider){
+                setVolume(volSlider.value()/100)
+            }
+            if(rateSlider){
+                p5.setRateParams(rateSlider.value())
+            }
+            if(depthSlider){
+                p5.setDepthParams(depthSlider.value())
+            }
             
             let fadeColor = bgColor
             let buttonColor = p5.color(255, 255, 255, 35)
             let buttonTextColor = buttonColor
+            
             p5.background(bgColor);
             if(p5.mouseX<=p5.windowWidth/2 && p5.mouseY<=p5.windowHeight/2){
                 let dist = p5.dist(p5.mouseX, p5.mouseY, 0, 0)
@@ -682,7 +841,16 @@ const Visual = () =>{
                 
             }
             
-            info.mousePressed(()=>{infoBubble.show()})
+            // info.mousePressed(()=>{
+                
+            //     infoBubble.show()
+            // })
+
+            // infoBubbleColor = buttonColor
+            
+            // infoBubbleColor.setAlpha(p5.alpha(buttonColor)/1.5)
+            // infoBubble.style("color", `rgba(0, 0, 0, ${p5.alpha(buttonColor)/255*2.5})`)
+            // infoBubble.style("background-color", infoBubbleColor)
 
             let currentSize
             buttons.forEach((b)=>{
@@ -729,27 +897,66 @@ const Visual = () =>{
             p5.fill(fadeColor)
             p5.rect(0, 0, p5.windowWidth, p5.windowHeight)
 
-            // p5.keyPressed = () => {
-            //     if (p5.keyCode === p5.LEFT_ARROW) {
-            //         // droneNodes.forEach((d)=>{
-            //         //     d.pulses.push(new Pulse(Math.random()*4+1, Math.floor(Math.random() * 40 + 5), d.id))
-            //         // })
-            //         droneNodes.forEach((d)=>{d.wobblyCircle()})
-            //     }
-            // }
-            // if(p5.mouseX<=240 && p5.mouseY <=80){
-            //         document.body.style.cursor = "pointer"
-            //     } else {
-            //         document.body.style.cursor = "auto"
-            //     }
         };
     }
-            return (
-                <div>
-                    {/* <button onClick={newZone}>RELOAD</button> */}
-                    {<ReactP5Wrapper key={renderNum} sketch={sketch} />}
-                </div>
-            )
+
+    const setVolume = (val) => {
+        if(droneNodes.length>0){
+            droneNodes[0].droneSource.outputGain.gain.linearRampTo(val, 0.15)
+        }
     }
+
+    
+
+    const blendParams = () => {
+        let blendTime = 3.0 //seconds since it's an audio action
+        
+        let avgParams = {}
+       
+        droneNodes.forEach((dn)=>{
+            Object.keys(dn.droneSource.params).forEach((param)=>{
+                if(!avgParams[param]){
+                    avgParams[param] = []
+                }
+                if(dn.droneSource.params[param].name){
+                    avgParams[param].push(dn.droneSource.params[param])
+                }
+                // else {
+                //     avgParams[param].push(dn.droneSource.params[param])
+                // }
+             })
+        })
+
+        Object.keys(avgParams).forEach((paramArray)=>{
+            let avg = paramArray.reduce((total, current)=>{
+                return total + current.value
+            })/paramArray.length
+            paramArray.forEach((p)=>{
+                p.linearRampTo(avg, blendTime)
+            })
+        })
+        
+    }
+
+    const scatterParams = () => {
+        let scatterTime = 3.0
+        droneNodes.forEach((dn)=> {
+            for (let n=0; n<25; n++){
+                dn.randomMod(scatterTime)
+            }
+            
+        })
+    }
+
+    return (
+        <div>
+            {/* <button onClick={blendParams}>blend</button>
+            <button onClick={scatterParams}>scatter</button> */}
+            {/* <input type="range" onChange={blendParams}/> */}
+            {/* <button onClick={newZone}>RELOAD</button> */}
+            {<ReactP5Wrapper key={renderNum} sketch={sketch} />}
+        </div>
+    )
+}
 export default React.memo(Visual)
 

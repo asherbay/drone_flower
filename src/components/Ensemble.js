@@ -34,9 +34,10 @@ const Ensemble = () => {
         ['F2', 'Bb2', 'Eb3',],
     ]
     const harmonicities = [1., 1., 1., 1., 1.25, 1.3333, 1.5, 2., 2., 2., 4., 0.666, 3., 2.5, 0.5, 0.5, 0.75]
+    const intervalRatios = [1/2, 5/8, 2/3, 3/4, 27/32, 8/9, 9/8, 6/5, 5/4, 4/3, 3/2, 27/16, 16/9, 243/128]
     const [modLoopId, setModLoopId] = useState(null)
     // const [chordLoopId, setChordLoopId] = useState(null)
-    
+    let chordInterval = Math.random() * 7000 + 1500
     // let modLoop
     
     useEffect(()=>{
@@ -70,13 +71,13 @@ const Ensemble = () => {
         // console.log(chord)
             if(voices.length>0){
                 voices.forEach((v)=>{
-                    let freq = Tone.Frequency(chord[voices.indexOf(v)]).valueOf()
+                    let freq = new Tone.Frequency(chord[voices.indexOf(v)]).valueOf()
                     let duration = Math.random() * 4. + 0.5
                     let delay = Math.random() * 3. + 0.5
 
-                    let glide = (Math.random()<0.00)
+                    // let glide = (Math.random()<0.00)
                     // console.log("glide? " + duration)
-                    if(glide){
+                    if(Math.random()>v.glideProbability){
                         v.freq.exponentialRampTo(freq, duration, "+" + delay)
                         v.currentNote = freq
                     } else {
@@ -106,7 +107,7 @@ const Ensemble = () => {
                         // }
                         // else { 
                         //     console.log("normal attack")
-                            v.synth.envelope.cancel("+" + (duration + delay*0.9))
+                            v.synth.envelope.cancel("+" + (duration + delay*0.94)) //this might be one to keep if the bug shows up again
                             // v.synth.triggerAttack(freq, "+" + (duration + delay)) 
                             v.synth.triggerAttack(freq, "+" + (duration + delay)) 
                         // }
@@ -159,6 +160,23 @@ const Ensemble = () => {
         setNumVoices(Math.floor(Math.random() * 3 + 2))
         // window.location.reload(true)
         console.log("new ens!")
+    }
+
+    const voiceStep = (voice=null, depth=0.25) => {
+       
+            // id = Math.floor(Math.random() * numVoices)
+        if(voices.length>0){
+            if(!voice){
+            voice = voices[Math.floor(Math.random() * numVoices)]
+        }
+        let targetFreq = voice.freq.value * intervalRatios[Math.floor(Math.random() * intervalRatios.length)]
+        console.log("TARGET FREQ " + voice.freq.value)
+        //voice.synth.setNote(Tone.Frequency(voice.synth.oscillator.frequency).transpose(1), "+" + (Math.random() * 4.0))
+        voice.freq.linearRampTo(targetFreq, Math.random(), "+0.2")
+        console.log("step?")
+        // console.log(Tone.Frequency(voice.synth.oscillator.frequency))
+        }
+        
     }
 
     const randomMod = (voice=null, param=null, duration=null) => {
@@ -249,6 +267,10 @@ const Ensemble = () => {
             voice.params[param] = Math.random()
             return
         }
+        else if(param==="chorusFb"){
+            val = Math.random()
+            console.log("chorusFb gonna be " + val)
+        }
 
         else if(param==="allpassCutoff"){
            val = Math.random() * 5000. + 100
@@ -315,7 +337,7 @@ const Ensemble = () => {
 
         let masterTrem = new Tone.Tremolo(Math.random()*0.7, Math.random()).connect(allpass)//hipass)
         masterTrem.wet.value = 0.9
-        let mono = new Tone.StereoWidener(0.5).connect(masterTrem)
+        let mono = new Tone.StereoWidener(Math.random()).connect(masterTrem)
         let phaser = new Tone.Phaser({
                 frequency: Math.random() * 4.,
                 octaves: Math.floor(Math.random() * 6),
@@ -323,7 +345,13 @@ const Ensemble = () => {
                 Q: Math.random() * 6. + 0.001,
                 wet: 0.7
             }).connect(mono)
-        let chorus = new Tone.Chorus(Math.random() * 4., Math.random() * 100., Math.random()).connect(phaser)
+        let chorus = new Tone.Chorus({
+                frequency: Math.random() * 4., 
+                delayTime: Math.random() * 100., 
+                depth: Math.random(),
+                feedback: Math.random()
+        }).connect(phaser)
+        console.log("CHORUS FB IS: " + chorus.feedback.value)
         let outputGain = new Tone.Gain(0.75).connect(chorus)
         
         let newVoices = []
@@ -334,7 +362,7 @@ const Ensemble = () => {
             let fastTrem = Math.floor(Math.random() * 2)
             let tremRate
             if(fastTrem){
-                tremRate = Math.random() * 10. + 2.
+                tremRate = Math.random() * 10. + 3.
             } else {
                 tremRate = Math.random() * 3.
             }
@@ -377,10 +405,13 @@ const Ensemble = () => {
             
             let oscType = ["fmtriangle", "fmsine", "fmtriangle", "fmsine", "fmsawtooth"][Math.floor(Math.random()*5)]
             let vol
+            let glideProbability = Math.random()
             if(oscType==="fmsawtooth"){
-                vol = -5.5
+                vol = -2.5
             } else if(oscType==="fmtriangle"){
-                vol = -1.5
+                vol = 1.5
+            } else {
+                vol = 3
             }
             let synth = new Tone.Synth({
                 volume: vol,
@@ -391,7 +422,7 @@ const Ensemble = () => {
                     modulationIndex: Math.random() / 2.
                 },
                 envelope: {
-                    attack: 4,
+                    attack: 2,
                     sustain: 1.0,
                     releaseCurve: [1, 0.9, 0.75, 0.5, 0.25, 0.],
                     release: 4
@@ -419,7 +450,7 @@ const Ensemble = () => {
             let fmLfo = new Tone.LFO({
                 frequency: Math.random() * 4.,
                 min: 0., 
-                max: 275.,
+                max: 1000.,
                 amplitude: Math.random()
             }).start().connect(modLvl)
 
@@ -453,9 +484,157 @@ const Ensemble = () => {
                 min: -2., 
                 max: 2.,
                 amplitude: Math.random()
-            })
+            }).connect(filterLfo.frequency).start()
 
-            
+            let rateControlParams = [
+                
+                {param: filterLfo.frequency,
+                    type: "signal",
+                    min: filterLfo.frequency.value / 4,
+                    max: filterLfo.frequency.value * 4},
+                {param: filterLfoLfo.frequency,
+                    type: "signal",
+                    min: filterLfoLfo.frequency.value / 4,
+                    max: filterLfoLfo.frequency.value * 4},
+
+                {param: fmLfo.frequency,
+                    type: "signal",
+                    min: fmLfoRate.value / 4,
+                    max: fmLfoRate.value * 4},
+                {param: fmLfoLfo.frequency,
+                    type: "signal",
+                    min: fmLfoLfo.frequency.value / 4,
+                    max: fmLfoLfo.frequency.value * 4},
+                {param: fmLfoDepthLfo.frequency,
+                    type: "signal",
+                    min: fmLfoDepthLfo.frequency.value / 4,
+                    max: fmLfoDepthLfo.frequency.value * 4},
+               
+
+                {param: trem.frequency,
+                    type: "signal",
+                    min: trem.frequency.value / 4,
+                    max: trem.frequency.value * 4},
+                    
+                {param: masterTrem.frequency,
+                    type: "signal",
+                    min: masterTrem.frequency.value / 4,
+                    max: masterTrem.frequency.value * 4},
+                
+                {param: chorus.frequency,
+                    type: "signal",
+                    min: chorus.frequency.value / 4,
+                    max: chorus.frequency.value * 4},
+
+                {param: phaser.frequency,
+                    type: "signal",
+                    min: phaser.frequency.value / 4,
+                    max: phaser.frequency.value * 4},
+            ]
+
+            let depthControlParams = [
+                
+                // {param: filterLfo.min,
+                //     type: "number",
+                //     min: filterLfo.min / 4,
+                //     max: filterLfo.min * 4},
+                {param: filterLfo.max,
+                    type: "number",
+                    min: filterLfo.min,
+                    max: filterLfo.max * 2},
+                {param: filterLfo.amplitude,
+                    type: "signal",
+                    min: filterLfo.amplitude.value / 2,
+                    max: Math.min(filterLfo.amplitude.value * 2, 1)},
+
+                // {param: filterLfoLfo.min,
+                //     type: "number",
+                //     min: filterLfoLfo.min / 4,
+                //     max: filterLfoLfo.min * 4},
+                {param: filterLfoLfo.max,
+                    type: "number",
+                    min: filterLfoLfo.min,
+                    max: filterLfoLfo.max * 2},
+                {param: filterLfoLfo.amplitude,
+                    type: "signal",
+                    min: filterLfoLfo.amplitude.value / 2,
+                    max: Math.min(filterLfoLfo.amplitude.value * 2, 1)},
+                
+                // {param: fmLfo.min,
+                //     type: "number",
+                //     min: fmLfo.min / 4,
+                //     max: fmLfo.min * 4},
+                {param: fmLfo.max,
+                    type: "number",
+                    min: fmLfo.min ,
+                    max: fmLfo.max * 2},
+                {param: fmLfoDepth,
+                    type: "signal",
+                    min: fmLfo.amplitude.value / 2,
+                    max: Math.min(fmLfo.amplitude.value * 2, 1)},
+
+                // {param: fmLfoLfo.min,
+                //     type: "number",
+                //     min: fmLfoLfo.min,
+                //     max: fmLfoLfo.min / 4},
+                {param: fmLfoLfo.max,
+                    type: "number",
+                    min: fmLfoLfo.min,
+                    max: fmLfoLfo.max * 2},
+                {param: fmLfoLfo.amplitude,
+                    type: "signal",
+                    min: fmLfoLfo.amplitude.value / 2,
+                    max: Math.min(fmLfoLfo.amplitude.value * 2, 1)},
+
+                // {param: fmLfoDepthLfo.min,
+                //     type: "number",
+                //     min: fmLfoDepthLfo.min / 4,
+                //     max: fmLfoDepthLfo.min * 4},
+                {param: fmLfoDepthLfo.max,
+                    type: "number",
+                    min: fmLfoDepthLfo.min,
+                    max: fmLfoDepthLfo.max * 2},
+
+                {param: fmLfoDepthLfo.amplitude,
+                    type: "signal",
+                    min: fmLfoDepthLfo.amplitude.value / 2,
+                    max: Math.min(fmLfoDepthLfo.amplitude.value * 2, 1)},
+                
+                {param: synth.oscillator.modulationIndex,
+                    type: "signal",
+                    min: synth.oscillator.modulationIndex.value / 2,
+                    max: synth.oscillator.modulationIndex.value * 2},
+                
+               
+
+                {param: trem.depth,
+                    type: "signal",
+                    min: trem.depth.value / 4,
+                    max: Math.min(trem.depth.value * 4, 1)},
+                    
+                {param: masterTrem.depth,
+                    type: "signal",
+                    min: masterTrem.depth.value / 4,
+                    max: Math.min(masterTrem.depth.value * 4, 1)},
+                
+                {param: chorus.depth,
+                    type: "number",
+                    min: chorus.depth / 4,
+                    max: Math.min(chorus.depth * 4, 1)},
+                {param: phaser.Q,
+                    type: "signal",
+                    min: phaser.Q.value / 4,
+                    max: phaser.Q.value * 4},
+                {param: allpass.Q,
+                    type: "signal",
+                    min: allpass.Q.value / 4,
+                    max: allpass.Q.value * 4},
+                {param: glideProbability,
+                    type: "number",
+                    min: 0,
+                    max: 1},
+            ]
+
             let params = {
                 cutoff: cutoff2,
                 res: filter.Q,
@@ -491,6 +670,8 @@ const Ensemble = () => {
                 chorusRate: chorus.frequency,
                 chorusTime: chorus.delayTime,
                 chorusDepth: chorus.depth,
+                chorusFb: chorus.feedback,
+                
                 // vibDepth: vib.depth,
                 // vibRate: vib.frequency,
             
@@ -516,7 +697,13 @@ const Ensemble = () => {
                 setPlaying: setPlaying,
                 playing: false,
                 randomMod: randomMod,
-                newEnsemble: newEnsemble
+                newEnsemble: newEnsemble,
+                outputGain: outputGain,
+                rateControlParams: rateControlParams,
+                depthControlParams: depthControlParams,
+                glideProbability: glideProbability,
+                chordInterval: chordInterval,
+                voiceStep: voiceStep 
             })
          }
         
@@ -525,12 +712,7 @@ const Ensemble = () => {
 
    
 
-    const voiceStep = () => {
-        let id = Math.floor(Math.random() * numVoices)
-        let voice = voices.find((v)=>v.id===id)
-        voice.synth.setNote(Tone.Frequency(voice.synth.oscillator.frequency).transpose(1), "+" + (Math.random() * 4.0))
-        // console.log(Tone.Frequency(voice.synth.oscillator.frequency))
-    }
+    
 
     const toggleVoices = () => {
         
@@ -538,11 +720,13 @@ const Ensemble = () => {
             if(playing){
                 clearInterval(modLoopId)
                 // modLoop = setInterval(randomMod, 500)
-                setModLoopId(setInterval(randomMod, 750))
+                // setModLoopId(setInterval(randomMod, 750)) //remake in Visual, assign one interval to each drone. random duration determined at setup, scaled by depth slider
                 newChord()
+                // setChord(chords[Math.floor(Math.random() * chords.length)])
                 voices.forEach((v)=>{
                     v.synth.envelope.cancel()
-                    v.synth.triggerAttack(v.freq.value, "+0.1")
+                    // console.log("this should work:/")
+                    v.synth.triggerAttack(v.freq.value, "+0.3")
                 })
                 // setTimeout(newChord, 500)
                 // console.log("attack?")
@@ -641,100 +825,11 @@ const Ensemble = () => {
         setChord(fittedChord)
     }
 
-
-    
-    // const getVoice = (voiceId) => {
-    //     return voices.find((v)=>v.id===voiceId)
-    // }
-    
-
-
-
-    // let width = 500
-    // let height = 500
-    // let drones = []
-
-    // function sketch(p5) {
-    //     class Drone {
-    //     constructor(x, y, r, id) {
-    //         this.position = [x, y];
-    //         this.r = r;
-    //         this.id = id
-    //     }
-    //     display() {
-    //         p5.noStroke();
-    //         p5.fill(204);
-    //         let outputLvl = getVoice(this.id).meter.getValue()//.filter.frequency.value
-    //         let filterLfoPos = getVoice(this.id).filterLfoMeter.getValue()
-    //         let filterLfoLvl = getVoice(this.id).params.filterLfoLvl.value
-    //         console.log(filterLfoLvl)
-    //         p5.ellipse(this.position[0], this.position[1], (outputLvl * 10 * outputLvl*10) * 100. + 20, filterLfoPos / 100 * filterLfoLvl + 20.);
-    //     }
-    // }
-
-                
-    //     p5.setup = () => {
-    //         p5.frameRate(20)
-    //        for(let i=0; i<numVoices; i++){
-    //            drones.push(new Drone(Math.random() * width, Math.random() * height, Math.random()*20+20, i))
-    //        }   
-        
-           
-    //         return p5.createCanvas(500, 500, /*p5.WEBGL*/)
-    //     };
-
-    //     p5.draw = () => {
-    //         p5.background(150);
-            
-    //         p5.fill(250)
-            
-    //         drones.forEach((d)=>{d.display()})
-            
-    //         // p5.push();
-    //         // p5.rotateZ(p5.frameCount * 0.01);
-    //         // p5.rotateX(p5.frameCount * 0.01);
-    //         // p5.rotateY(p5.frameCount * 0.01);
-    //         // p5.plane(100);
-    //         // p5.pop();
-            
-    //     };
-    // }
-        
-            // return <ReactP5Wrapper sketch={sketch} />;
     
 
     return (
         <div>
-            {/* <button onClick={may}>{playing ? "stop" : "start"}</button>
-            <input type="number" min="0" step="1" onChange={(e)=>{setNumVoices(e.target.value)}}/> */}
-            {/* <select onChange={(e)=>{fitChordToVoices(e.target.value.split(', '))}}>
-                {chords.map((c)=>
-                    <option value={c.join(', ')}>{c.join(', ')}</option>
-                )}
-            </select>
-            <p>mod lvl</p>
-            <input type="range" onChange={(e)=>{
-                voices.forEach((v)=>{modulateParam(v.id, "fmModLvl", e.target.value/100., 0.2)})
-            }}/>
-            <p>mod lfo lvl</p>
-            <input type="range" onChange={(e)=>{
-                voices.forEach((v)=>{modulateParam(v.id, "fmLfoLvl", e.target.value/100., 0.2)})
-            }}/>
-            <p>cutoff</p>
-            <input type="range" onChange={(e)=>{
-                voices.forEach((v)=>{modulateParam(v.id, "cutoff", e.target.value*50-1450, 0.2)})
-            }}/>
-            <p>cutoff lfo lvl</p>
-            <input type="range" onChange={(e)=>{
-                
-                 voices.forEach((v)=>{modulateParam(v.id, "filterLfoLvl", e.target.value/100., 0.2)})
-            }}/>
-            <br/>
-            {/* <Visual numVoices={numVoices} getVoice={getVoice}/> */}
-            {/* <ReactP5Wrapper sketch={sketch} /> */}
-            {/* <button onClick={twiddleCombs}>twiddle combs</button> */} 
-            
-            {/* {numVoices>0 && renderVoices()} */}
+           
         </div>
 
     )
