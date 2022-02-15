@@ -58,7 +58,7 @@ const Ensemble = () => {
     useEffect(()=>{
         console.log("useEffect voices " + voices.length)
         if(voices.length===0){
-            setNumVoices(Math.floor(Math.random() * 3 + 2))
+            setNumVoices(Math.floor(Math.random() * 3 + 3))
         } else {
             drones.setDrones(voices)
         }
@@ -165,17 +165,20 @@ const Ensemble = () => {
     const voiceStep = (voice=null, depth=0.25) => {
        
             // id = Math.floor(Math.random() * numVoices)
-        if(voices.length>0){
+        // if(voices.length>0){
             if(!voice){
-            voice = voices[Math.floor(Math.random() * numVoices)]
-        }
+                voice = voices[Math.floor(Math.random() * numVoices)]
+            }
         let targetFreq = voice.freq.value * intervalRatios[Math.floor(Math.random() * intervalRatios.length)]
-        console.log("TARGET FREQ " + voice.freq.value)
+        if(targetFreq>800){
+            targetFreq = targetFreq/2
+        }
+        // console.log("TARGET FREQ " + voice.freq.value)
         //voice.synth.setNote(Tone.Frequency(voice.synth.oscillator.frequency).transpose(1), "+" + (Math.random() * 4.0))
         voice.freq.linearRampTo(targetFreq, Math.random(), "+0.2")
         console.log("step?")
         // console.log(Tone.Frequency(voice.synth.oscillator.frequency))
-        }
+        // }
         
     }
 
@@ -268,7 +271,7 @@ const Ensemble = () => {
             return
         }
         else if(param==="chorusFb"){
-            val = Math.random()
+            val = Math.min(Math.random(), 0.9)
             console.log("chorusFb gonna be " + val)
         }
 
@@ -313,7 +316,7 @@ const Ensemble = () => {
     const generateVoices = () => {
         let masterMeter = new Tone.Meter({normalRange: true}).toDestination()
         let verb = new Tone.Reverb({
-            decay: Math.random() * 5.5,
+            decay: Math.random() * 3.7,
             wet: Math.random() * 0.6
         }).connect(masterMeter)
         console.log("WET " + verb.wet.value)
@@ -339,7 +342,7 @@ const Ensemble = () => {
         masterTrem.wet.value = 0.9
         let mono = new Tone.StereoWidener(Math.random()).connect(masterTrem)
         let phaser = new Tone.Phaser({
-                frequency: Math.random() * 4.,
+                frequency: Math.random() * 3.,
                 octaves: Math.floor(Math.random() * 6),
                 baseFrequency: Math.random() * 5000. + 100,
                 Q: Math.random() * 6. + 0.001,
@@ -352,7 +355,7 @@ const Ensemble = () => {
                 feedback: Math.random()
         }).connect(phaser)
         console.log("CHORUS FB IS: " + chorus.feedback.value)
-        let outputGain = new Tone.Gain(0.75).connect(chorus)
+        let outputGain = new Tone.Gain(0.7).connect(chorus)
         
         let newVoices = []
          for (let i=0; i<numVoices; i++){
@@ -369,7 +372,7 @@ const Ensemble = () => {
             let trem = new Tone.Tremolo(tremRate, Math.random()).connect(meter)//.connect(mono)
             let del = new Tone.FeedbackDelay({
                 delayTime: Math.random(), 
-                feedback: Math.random() * 0.79,
+                feedback: Math.random() * 0.59,
                 wet: Math.random() * 0.59
             }).connect(trem)
             
@@ -423,9 +426,10 @@ const Ensemble = () => {
                 },
                 envelope: {
                     attack: 2,
-                    sustain: 1.0,
+                    sustain: 0.7,
+                    decay: 2,
                     releaseCurve: [1, 0.9, 0.75, 0.5, 0.25, 0.],
-                    release: 4
+                    release: 3
                 }
             }).connect(filter)
             if(synth.oscillator.type==="fmsine"){
@@ -771,7 +775,7 @@ const Ensemble = () => {
         // console.log("NEW CHORD: " + newChord + " FOR " + rate)
         fitChordToVoices(newChord)
         if(Math.random() < 0.4){
-            voiceStep()
+            // voiceStep()
         }
         if(playing){
             scheduleNewChord(rate)

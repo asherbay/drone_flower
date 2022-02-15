@@ -44,7 +44,8 @@ const Visual = () =>{
     
     const sketch = (p5) =>{
         const rndColorVal = () => {return Math.floor(Math.random()*256)}
-        const blendingModes = [p5.BLEND, p5.HARD_LIGHT,] //p5.LIGHTEST, p5.HARD_LIGHT] //p5.DIFFERENCE, p5.EXCLUSION,]// p5.HARD_LIGHT,]// p5.BURN,]
+        const blendingModes = [p5.BLEND, p5.BLEND, p5.HARD_LIGHT,] //p5.LIGHTEST, p5.HARD_LIGHT] //p5.DIFFERENCE, p5.EXCLUSION,]// p5.HARD_LIGHT,]// p5.BURN,]
+        const echoBlendingModes = [p5.BLEND, p5.SOFT_LIGHT, p5.SOFT_LIGHT, p5.HARD_LIGHT, p5.BURN,]
         let width = p5.windowWidth
         let height = p5.windowHeight
         let bgColor = p5.color(rndColorVal(), rndColorVal(), rndColorVal(), 255)    
@@ -76,7 +77,7 @@ const Visual = () =>{
                 this.seedY = Math.random()
                 this.age = 0
                 
-                this.modInterval = Math.floor(Math.random() * frameRate * 1.5) + 3
+                this.modInterval = Math.floor(Math.random() * frameRate * 2.5 + frameRate * 1.2)
                 this.ogModInterval = this.modInterval
                 
 
@@ -99,6 +100,10 @@ const Visual = () =>{
                 this.reactivity = Math.random() * 0.7 + 0.085
 
                 this.blendingMode = blendingModes[Math.floor(Math.random() * blendingModes.length)]
+                this.echoBlendingMode = echoBlendingModes[Math.floor(Math.random() * echoBlendingModes.length)]
+                if(this.echoBlendingMode===p5.BURN){
+                    console.log("BURN MODE!")
+                }
 
                 this.wobbliness = 20
                 this.smoothness = 9
@@ -180,16 +185,16 @@ const Visual = () =>{
                     this.secondaryColor = p5.lerpColor(this.secondaryColor, this.newNoteParams.secondaryColor, prog)
                     this.color = p5.lerpColor(this.color, this.newNoteParams.color, prog/1.3)
 
-                    this.wobbliness = p5.lerp(this.wobbliness, this.newNoteParams.wobbliness, prog)
-                    this.smoothness = p5.lerp(this.smoothness, this.newNoteParams.smoothness, prog)
+                    this.wobbliness = p5.lerp(this.wobbliness, this.newNoteParams.wobbliness, prog * p5.map(this.width, p5.windowWidth/11, p5.windowWidth, 1, 0.05))
+                    this.smoothness = p5.lerp(this.smoothness, this.newNoteParams.smoothness, prog * p5.map(this.width, p5.windowWidth/11, p5.windowWidth, 1, 0.05))
                     // this.echoRate = Math.floor(p5.lerp(this.echoRate, this.newNoteParams.echoRate, prog))
                     // this.echoTime = Math.floor(p5.lerp(this.echoTime, this.newNoteParams.echoTime, prog))
                     // if(this.echoRate>this.echoTime){
                     //     this.echoTime = this.echoRate
                     // }
                     this.reactivity = p5.lerp(this.reactivity, this.newNoteParams.reactivity, prog)
-                    this.seedX = p5.lerp(this.seedX, this.newNoteParams.seedX, prog)
-                    this.seedY = p5.lerp(this.seedY, this.newNoteParams.seedY, prog)
+                    this.seedX = p5.lerp(this.seedX, this.newNoteParams.seedX, prog * p5.map(this.width, p5.windowWidth/11, p5.windowWidth, 1, 0.05))
+                    this.seedY = p5.lerp(this.seedY, this.newNoteParams.seedY, prog * p5.map(this.width, p5.windowWidth/11, p5.windowWidth, 1, 0.05))
                    
                 } else {
                     this.newNoteTransTime = 0
@@ -200,12 +205,12 @@ const Visual = () =>{
             display() {
                 p5.blendMode(this.blendingMode)
                 this.age++
-                if(this.age%this.modInterval===0){
+                if(this.age%parseInt(this.modInterval)===0){
                     let dur = Math.random() * p5.map(rateSlider.value(), 0, 100, 8, 1.5)
                     
                     this.randomMod(dur)
                     console.log(`${this.id} mod triggered over ${dur} secs`)
-                } else if (Math.random()*50<(rateSlider.value()/100)){ 
+                } else if (Math.random()*60<(rateSlider.value()/100)){ 
                     this.droneSource.voiceStep(this.droneSource, depthSlider.value()/100)
                 }
                 p5.noStroke();
@@ -221,7 +226,7 @@ const Visual = () =>{
                 
                 
                 
-                this.rx = p5.map(outputLvl, 0., 1., p5.windowWidth/(9 + (this.seedX -0.75) * 10), p5.windowWidth/(3 + (this.seedY -0.75) * 3.5))
+                this.rx = p5.map(outputLvl, 0., 1., p5.windowWidth/(8 + (this.seedX -0.75) * 8), p5.windowWidth/(3 + (this.seedY -0.75) * 3.5))
                 
                 
                     // let maxAlpha =  p5.map(width/(10 + (this.seedX -0.75) * 7, width/11.75, width/4, 250, 200))
@@ -237,9 +242,11 @@ const Visual = () =>{
                 
 
                 p5.fill(this.color)
-                this.wobbliness =  Math.random() * 20 + (100 * (this.droneSource.params.filterLfoLvl.value * this.droneSource.params.fmLfoLvl.value)) + (this.rx) // /1.3)
+                this.wobbliness = 10 + (100 * (this.droneSource.params.filterLfoLvl.value * this.droneSource.params.fmLfoLvl.value)) + (this.rx) // /1.3)
                 
-                this.wobblyCircle(this.wobbliness, this.rx, p5.lerp(0.005, 0.035, outputLvl*this.droneSource.modLvl.value * 1.5), outputLvl)
+
+                // console.log("RATE MODIFIER " + outputLvl * (rateSlider.value()/100) )
+                this.wobblyCircle(this.wobbliness * p5.map(depthSlider.value(), 0, 100, 0.45, 2.5), this.rx, p5.map(outputLvl * 0.8 * (rateSlider.value()/(100 + this.wobbliness * p5.map(depthSlider.value(), 0, 100, 0.45, 2.5))) * (p5.map(this.width, p5.windowWidth/11, p5.windowWidth, 1.4, 0.002)), 0, 1, 0.005, 0.035 ), outputLvl)
 
                 
                     this.newNote()
@@ -470,7 +477,7 @@ const Visual = () =>{
 
 
                     //XTRA WOBBLER!
-                    this.blendMode = p5.SOFT_LIGHT
+                    this.blendMode = this.echoBlendingMode
                     this.shapeVar2 = []
                     let xOff1
                     let yOff1
@@ -662,13 +669,15 @@ const Visual = () =>{
             
             popup.position(originElement.position().x, originElement.position().y + 50)
             popup.class("speech")
-            popup.style("font-size", "23pt")
+            popup.style("font-size", "33pt")
             popup.style("width", "20vw")
             popup.style("padding", "17px")
             popup.style("background-color", popupColor)
             popup.style("color", textColor)
             popup.style("text-align", "left")
             popup.style("border-radius", "5%")
+            popup.style("display", "flex")
+            popup.style("align-items", "center")
             popup.attribute("originElement", originElement)
             popup.attribute("hover", false)
             originElement.mousePressed(()=>{
@@ -707,13 +716,22 @@ const Visual = () =>{
         p5.controlParam = (container, minText, maxText) => {
             let div = p5.createDiv()
             div.style('display', 'flex')
+            
             let slider = p5.createSlider(0., 100.)
+            slider.style('width', '16vw')
+            slider.style('transform', 'scale(1, 1.3)')
+            
+            
+            
             let maxLabel = p5.createP(maxText)
             let minLabel = p5.createP(minText)
             div.child(minLabel)
             div.child(slider)
             div.child(maxLabel)
+            
             container.child(div)
+            // div.style('position', 'relative')
+            // div.position(container.style('width')/2, 50, 'inherit')
             return slider
         }
 
@@ -737,6 +755,7 @@ const Visual = () =>{
             buttons.push(reset, controls, info)
             
             infoBubble = p5.uiPopup(info, infoText)
+            infoBubble.style('width', '35vw')
 
 
             controlMenu = p5.uiPopup(controls, "")
@@ -744,6 +763,9 @@ const Visual = () =>{
             volSlider = p5.controlParam(controlMenu, "🔇", "🔊")
             depthSlider = p5.controlParam(controlMenu, "💧", "🌊")
             rateSlider = p5.controlParam(controlMenu, "☁️", "🌪️")
+            depthSlider.value(25)
+            rateSlider.value(25)
+
             // volControl = p5.createDiv()
             // volControl.style('display', 'flex')
             // volumeSlider = p5.createSlider(0., 100.)
@@ -802,7 +824,8 @@ const Visual = () =>{
         p5.setDepthParams = (val) => {
             if(droneNodes.length>0){
                 droneNodes.forEach((dn)=>{
-                    dn.modInterval = p5.map(val, 0, 100, dn.ogModInterval * 2, dn.ogModInterval / 4)
+                    dn.modInterval = p5.map(val, 0, 100, dn.ogModInterval * 4, dn.ogModInterval / 2)
+                    
                     dn.droneSource.depthControlParams.forEach((param)=>{
                         let targetVal = p5.map(val, 0, 100, param.min, param.max)
                         if(param.type==="signal"){
