@@ -16,7 +16,7 @@ const Visual = () =>{
     
     const [renderNum, setRenderNum] = useState(0)
     // const [homogeneity, setHomogeneity] = useState(0)
-    const infoText = "Drone Zone is an audiovisual experience generator. Watch and listen as the shapes and sounds evolve endlessly. Interact by clicking shapes or changing parameters in the 🎛️ menu.\n\n Made with p5.js (visuals) and Tone.js (sound)"
+    const infoText = `Drone Flower is an audiovisual experience generator. Watch and listen as the shapes and sounds evolve endlessly. Interact by clicking shapes or changing parameters in the 🎛️ menu. ${<br/>} Made with p5.js (visuals) and Tone.js (sound)`
     
 
     let droneNodes = []
@@ -591,7 +591,7 @@ const Visual = () =>{
 
             //if(masterLvl<=0.01 && player1.state!== "started"){
 
-            if(initTint>0 && player1){
+            if(initTint===20 && (player1 && player1.state==="stopped")){
                 console.log("ambience triggered!")
                 player1.fadeIn = 4
                 p5.triggerAmbience()
@@ -602,6 +602,16 @@ const Visual = () =>{
                 p5.shuffle(droneNodes, true)
                 console.log("new order")
             }
+
+
+            if(droneNodes[0].droneSource.playing===false){
+                // FIRST CLICK
+                
+                droneNodes[0].droneSource.setPlaying(true)
+                // droneNodes[0].droneSource.synth.triggerAttack(dn.droneSource.synth.oscillator.frequency.value)
+                droneNodes[0].newNoteTransTime = Math.floor(Math.random() * 40) + 20
+            }
+
             droneNodes.forEach((dn)=>{
                 // console.log(dn.left, dn.right, dn.top, dn.bottom,)
                 if(p5.mouseX>=dn.left && p5.mouseX<=dn.right && p5.mouseY>=dn.top && p5.mouseY<=dn.bottom){
@@ -611,7 +621,8 @@ const Visual = () =>{
                         dn.droneSource.setPlaying(true)
                         dn.droneSource.synth.triggerAttack(dn.droneSource.synth.oscillator.frequency.value)
                         dn.newNoteTransTime = Math.floor(Math.random() * 40) + 20
-                    } else {
+                    } 
+                    else {
                         console.log(dn.id + " twiddled!")
                         dn.newNoteTransTime = Math.floor(Math.random() * 40) + 20
                         let numMods = Math.floor(Math.random() * 13) + 7
