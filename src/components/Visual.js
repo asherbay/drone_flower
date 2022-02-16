@@ -1,23 +1,28 @@
 import React, {useEffect, useState, useContext}  from "react";
 import { ReactP5Wrapper } from "react-p5-wrapper";
-// import * as Tone from 'tone'
+import * as Tone from 'tone'
 import {DroneContext} from '../providers/DroneProvider'
 import {Vector} from "p5"
+import ambience from '../audio/ambience.mp3'
 
 //since pulse as a class hasn't been working, try pulses as an array of objects {pulseLifespan, pulseAge, magnitude, target color, id}
 const Visual = () =>{
     // const {getDrone, drones, setDrones} = useContext(DroneContext)
-    const {getDrone, drones} = useContext(DroneContext)
+    const {getDrone, drones, newZone} = useContext(DroneContext)
     // const [loaded, setLoaded] = useState(false)
     // const [canvasCreated, setCanvasCreated] = useState(false)
     // const [canvas, setCanvas] = useState(null)
     const harmonicities = [1., 1., 1., 1., 1.25, 1.3333, 1.5, 2., 2., 2., 4., 0.666, 3., 2.5, 0.5, 0.5, 0.75]
     
     const [renderNum, setRenderNum] = useState(0)
+    // const [homogeneity, setHomogeneity] = useState(0)
+    const infoText = "Drone Zone is an audiovisual experience generator. Watch and listen as the shapes and sounds evolve endlessly. Interact by clicking shapes or changing parameters in the 🎛️ menu.\n\n Made with p5.js (visuals) and Tone.js (sound)"
     
+
     let droneNodes = []
-
-
+    let volumeSlider
+    let player1 
+    let initTint = 20
     useEffect(()=>{
         console.log("wrapper returned")
         // setLoaded(true)
@@ -41,13 +46,19 @@ const Visual = () =>{
     
     const sketch = (p5) =>{
         const rndColorVal = () => {return Math.floor(Math.random()*256)}
-        const blendingModes = [p5.BLEND,]//p5.HARD_LIGHT,] //p5.LIGHTEST, p5.HARD_LIGHT] //p5.DIFFERENCE, p5.EXCLUSION,]// p5.HARD_LIGHT,]// p5.BURN,]
+        const blendingModes = [p5.BLEND, p5.BLEND, p5.HARD_LIGHT,] //p5.LIGHTEST, p5.HARD_LIGHT] //p5.DIFFERENCE, p5.EXCLUSION,]// p5.HARD_LIGHT,]// p5.BURN,]
+        const echoBlendingModes = [p5.BLEND, p5.SOFT_LIGHT, p5.SOFT_LIGHT, p5.HARD_LIGHT, p5.BURN,]
         let width = p5.windowWidth
         let height = p5.windowHeight
         let bgColor = p5.color(rndColorVal(), rndColorVal(), rndColorVal(), 255)    
         let age = 0        
 
         const frameRate = 25
+
+
+        
+
+
         class DroneNode {
             constructor(x, y, r, id) {
                 this.position = [x, y];
@@ -68,6 +79,10 @@ const Visual = () =>{
                 this.seedY = Math.random()
                 this.age = 0
                 
+                this.modInterval = Math.floor(Math.random() * frameRate * 2.5 + frameRate * 1.2)
+                this.ogModInterval = this.modInterval
+                
+
                 this.left = 0
                 this.right = 0
                 this.top = 0
@@ -87,6 +102,10 @@ const Visual = () =>{
                 this.reactivity = Math.random() * 0.7 + 0.085
 
                 this.blendingMode = blendingModes[Math.floor(Math.random() * blendingModes.length)]
+                this.echoBlendingMode = echoBlendingModes[Math.floor(Math.random() * echoBlendingModes.length)]
+                if(this.echoBlendingMode===p5.BURN){
+                    console.log("BURN MODE!")
+                }
 
                 this.wobbliness = 20
                 this.smoothness = 9
@@ -160,7 +179,7 @@ const Visual = () =>{
                     let prog = (this.newNoteTransTimer / this.newNoteTransTime)
 
                     if(this.twiddleDepth){
-                        prog = prog * this.twiddleDepth
+                        prog = prog * this.twiddleDepth * p5.map(initTint, 0, 20, 1., 0.1)
                         
                     }
                     this.newNoteTransTimer++
@@ -168,16 +187,16 @@ const Visual = () =>{
                     this.secondaryColor = p5.lerpColor(this.secondaryColor, this.newNoteParams.secondaryColor, prog)
                     this.color = p5.lerpColor(this.color, this.newNoteParams.color, prog/1.3)
 
-                    this.wobbliness = p5.lerp(this.wobbliness, this.newNoteParams.wobbliness, prog)
-                    this.smoothness = p5.lerp(this.smoothness, this.newNoteParams.smoothness, prog)
+                    this.wobbliness = p5.lerp(this.wobbliness, this.newNoteParams.wobbliness, prog * p5.map(this.width, p5.windowWidth/11, p5.windowWidth, 1, 0.05))
+                    this.smoothness = p5.lerp(this.smoothness, this.newNoteParams.smoothness, prog * p5.map(this.width, p5.windowWidth/11, p5.windowWidth, 1, 0.05))
                     // this.echoRate = Math.floor(p5.lerp(this.echoRate, this.newNoteParams.echoRate, prog))
                     // this.echoTime = Math.floor(p5.lerp(this.echoTime, this.newNoteParams.echoTime, prog))
                     // if(this.echoRate>this.echoTime){
                     //     this.echoTime = this.echoRate
                     // }
                     this.reactivity = p5.lerp(this.reactivity, this.newNoteParams.reactivity, prog)
-                    this.seedX = p5.lerp(this.seedX, this.newNoteParams.seedX, prog)
-                    this.seedY = p5.lerp(this.seedY, this.newNoteParams.seedY, prog)
+                    this.seedX = p5.lerp(this.seedX, this.newNoteParams.seedX, prog * p5.map(this.width, p5.windowWidth/11, p5.windowWidth, 1, 0.05))
+                    this.seedY = p5.lerp(this.seedY, this.newNoteParams.seedY, prog * p5.map(this.width, p5.windowWidth/11, p5.windowWidth, 1, 0.05))
                    
                 } else {
                     this.newNoteTransTime = 0
@@ -188,31 +207,28 @@ const Visual = () =>{
             display() {
                 p5.blendMode(this.blendingMode)
                 this.age++
-                p5.noStroke();
-                
-                if(Math.random()>0.998){
-                    p5.shuffle(droneNodes, true)
-                    console.log("new order")
+                if(this.age%parseInt(this.modInterval)===0){
+                    let dur = Math.random() * p5.map(rateSlider.value(), 0, 100, 8, 1.5)
+                    
+                    this.randomMod(dur)
+                    console.log(`${this.id} mod triggered over ${dur} secs`)
+                } else if (Math.random()*60<(rateSlider.value()/100)){ 
+                    this.droneSource.voiceStep(this.droneSource, depthSlider.value()/100)
                 }
+                p5.noStroke();
 
-                let outputLvl = p5.lerp(this.prevLvl, this.droneSource.meter.getValue(), this.reactivity)
+                
+
+                let outputLvl = p5.lerp(this.prevLvl, this.droneSource.meter.getValue(), this.reactivity * p5.map(rateSlider.value(), 0, 100, 0.7, 1.9))
                 this.outputLvl = outputLvl
                 this.prevLvl = outputLvl
                 // let freq = this.droneSource.freq.value
                 // let filterLfoPos = this.droneSource.filterLfoMeter.getValue()
                 // let filterLfoLvl = this.droneSource.params.filterLfoLvl.value
                 
-                // if(this.pulseInterval<=0){
-                //     this.pulseInterval = p5.map(freq, 35, 500, 25, 1)
-                //     new Pulse(outputLvl * 5 + 1.3, p5.map(freq, 35, 2300, 30, 5), this.id)
-                //     // console.log("pulse interval: " + this.pulseInterval + " " + outputLvl * 4)
-                // } else if(this.pulseInterval>0){
-                //     this.pulseInterval--
-                // }
-
-               // this.rx = (outputLvl * 70 ) * 20. + 20 // outputLvl->width
                 
-                 this.rx = p5.map(outputLvl, 0., 1., width/(10 + (this.seedX -0.75) * 10), width/(3 + (this.seedY -0.75) * 3.5))
+                
+                this.rx = p5.map(outputLvl, 0., 1., p5.windowWidth/(8 + (this.seedX -0.75) * 8), p5.windowWidth/(3 + (this.seedY -0.75) * 3.5))
                 
                 
                     // let maxAlpha =  p5.map(width/(10 + (this.seedX -0.75) * 7, width/11.75, width/4, 250, 200))
@@ -228,9 +244,11 @@ const Visual = () =>{
                 
 
                 p5.fill(this.color)
-                this.wobbliness =  Math.random() * 20 + (100 * (this.droneSource.params.filterLfoLvl.value * this.droneSource.params.fmLfoLvl.value)) + (this.rx) // /1.3)
+                this.wobbliness = 10 + (100 * (this.droneSource.params.filterLfoLvl.value * this.droneSource.params.fmLfoLvl.value)) + (this.rx) // /1.3)
                 
-                this.wobblyCircle(this.wobbliness, this.rx, p5.lerp(0.005, 0.035, outputLvl*this.droneSource.modLvl.value * 1.5), outputLvl)
+
+                // console.log("RATE MODIFIER " + outputLvl * (rateSlider.value()/100) )
+                this.wobblyCircle(this.wobbliness * p5.map(depthSlider.value(), 0, 100, 0.45, 2.5), this.rx * p5.map(initTint, 0, 20, 1., 0.6), p5.map(outputLvl * 0.8 * (rateSlider.value()/(100 + this.wobbliness * p5.map(depthSlider.value(), 0, 100, 0.45, 2.5))) * (p5.map(this.width, p5.windowWidth/11, p5.windowWidth, 1.4, 0.002)), 0, 1, 0.005, 0.035 ) * p5.map(initTint, 0, 20, 1., 0.6), outputLvl)
 
                 
                     this.newNote()
@@ -387,6 +405,10 @@ const Visual = () =>{
             voice.params[param] = Math.random()
             return
         }
+        else if(param==="chorusFb"){
+            val = Math.random()
+            console.log("chorusFb gonna be " + val)
+        }
 
         else if(param==="delayWet"){
             val = Math.random() * 0.8
@@ -398,7 +420,9 @@ const Visual = () =>{
         else {
             return
         }
-       console.log("VOICE: " + voice.id + " PARAM: " + param + " TO: " + val + " OVER: " + duration + " secs")
+
+        // val = val * p5.map(depthSlider.value(), 0, 100, )
+    //    console.log("VOICE: " + voice.id + " PARAM: " + param + " TO: " + val + " OVER: " + duration + " secs")
         voice.params[param].linearRampTo(val, duration)
         
         
@@ -455,7 +479,7 @@ const Visual = () =>{
 
 
                     //XTRA WOBBLER!
-                    this.blendMode = p5.SOFT_LIGHT
+                    this.blendMode = this.echoBlendingMode
                     this.shapeVar2 = []
                     let xOff1
                     let yOff1
@@ -484,7 +508,7 @@ const Visual = () =>{
 
                     
                 p5.pop()
-                this.position = [p5.constrain(this.position[0], 0, width*0.5), p5.constrain(this.position[1], 0, height*0.5)]
+                this.position = [p5.constrain(this.position[0], 0, p5.windowWidth*0.5), p5.constrain(this.position[1], 0, p5.windowHeight*0.5)]
                 
                 this.left = p5.min(this.shapeVar.concat(this.shapeVar2).map((sv)=>sv.x))
                 this.right = p5.max(this.shapeVar.concat(this.shapeVar2).map((sv)=>sv.x))
@@ -556,73 +580,430 @@ const Visual = () =>{
         }
 
         p5.mouseClicked = () => {
-            console.log(" clicked!! " + p5.mouseX, p5.mouseY)
+            // console.log(" clicked!! " + p5.mouseX, p5.mouseY)
+            uiPopups.forEach((pu)=> {
+                // console.log("hover attr: " + typeof pu.attribute("hover"))
+                if(pu.attribute("hover")=="false"){
+                    // console.log("hide it!")
+                    pu.hide()
+                }
+            })
+
+            //if(masterLvl<=0.01 && player1.state!== "started"){
+
+            if(initTint>0 && player1){
+                console.log("ambience triggered!")
+                player1.fadeIn = 4
+                p5.triggerAmbience()
+            }
+                
+
+            if(Math.random()>0.83){
+                p5.shuffle(droneNodes, true)
+                console.log("new order")
+            }
             droneNodes.forEach((dn)=>{
-                console.log(dn.left, dn.right, dn.top, dn.bottom,)
+                // console.log(dn.left, dn.right, dn.top, dn.bottom,)
                 if(p5.mouseX>=dn.left && p5.mouseX<=dn.right && p5.mouseY>=dn.top && p5.mouseY<=dn.bottom){
                     if(dn.droneSource.playing===false){
-                        console.log("started!")
+                        // FIRST CLICK
+                        
                         dn.droneSource.setPlaying(true)
+                        dn.droneSource.synth.triggerAttack(dn.droneSource.synth.oscillator.frequency.value)
                         dn.newNoteTransTime = Math.floor(Math.random() * 40) + 20
                     } else {
                         console.log(dn.id + " twiddled!")
                         dn.newNoteTransTime = Math.floor(Math.random() * 40) + 20
-                        let numMods = Math.floor(Math.random() * 10) + 9
+                        let numMods = Math.floor(Math.random() * 13) + 7
                         console.log(numMods + " mods from click!")
                         for (let n = 0 ; n<numMods; n++){
                             dn.randomMod((dn.newNoteTransTime / frameRate) / (Math.random() * 5)+1)
-                        }
+                        }   
                         return
                         }
                     
 
                 }
             })
+            
+            
         }
 
+        
+        p5.windowResized = () => {
+            p5.resizeCanvas(p5.windowWidth, p5.windowHeight)
+            droneNodes.forEach((dn)=>{
+                dn.position = [p5.windowWidth/2, p5.windowHeight/2]
+            })
+        }
+
+        p5.uiButton = (xPos, text,)=>{
+            let button = p5.createP(text)
+            let size = 40
+            button.style('text-align', 'justify')
+            button.style('color', 'rgba(255, 255, 255, 255)')
+            // button.style('background-color', 'rgba(255, 255, 255, 0)')
+            
+
+            button.position(xPos, 5)
+            // button.size(size, size)
+            button.style('font-size', size + "pt")
+            button.style('padding-right', "8px")
+            button.style('padding-left', "8px")
+            button.style('border-radius', "8px")
+
+            button.attribute('ogSize', size)
+            button.attribute('maxScale', 1.3)
+            button.attribute('status', 'normal')
+            button.attribute('motionTimer', 0)
+            button.attribute('motionTime', 3)
+            button.mouseOver(()=>{
+                button.style("background-color", "rgba(255, 255, 255, 0.2)")
+                
+                button.attribute('status', 'focus')
+                button.attribute('motionTimer', 0)
+                document.body.style.cursor = "pointer"
+            })
+            button.mouseOut(()=>{
+                button.style("background-color", "transparent")
+                button.attribute('status', 'defocus')
+                button.attribute('motionTimer', 0)
+                document.body.style.cursor = "auto"
+            })
+            return button 
+        }
+
+        let uiPopups = []
+        p5.uiPopup = (originElement, text) => {
+            let popup = p5.createP(text)
+            let popupColor = p5.color(255, 255, 255, 80)
+            let textColor  = p5.color(0, 0, 0, 170)
+            
+            popup.position(originElement.position().x, originElement.position().y + 50)
+            popup.class("speech")
+            popup.style("font-size", "33pt")
+            popup.style("width", "20vw")
+            popup.style("padding", "17px")
+            popup.style("background-color", popupColor)
+            popup.style("color", textColor)
+            popup.style("text-align", "left")
+            popup.style("border-radius", "5%")
+            popup.style("display", "flex")
+            popup.style("align-items", "center")
+            popup.attribute("originElement", originElement)
+            popup.attribute("hover", false)
+            originElement.mousePressed(()=>{
+                popup.show()
+                
+            })
+            
+            popup.mouseOver(()=>{
+                popup.attribute("hover", true)
+
+            })
+             popup.mouseOut(()=>{
+                popup.attribute("hover", false)
+
+            })
+
+
+            originElement.mouseOver(()=>{
+                popup.attribute("hover", true)
+                document.body.style.cursor = "pointer"
+                originElement.style("background-color", "rgba(255, 255, 255, 0.2)")
+                // console.log("hovering! " + popup.attribute("hover"))
+            })
+            originElement.mouseOut(()=>{
+                popup.attribute("hover", false)
+                document.body.style.cursor = "auto"
+                originElement.style("background-color", "transparent")
+                // console.log("not hovering! " + popup.attribute("hover"))
+            })
+            popup.hide()
+            
+            uiPopups.push(popup)
+            return popup
+        }
+
+        p5.controlParam = (container, minText, maxText) => {
+            let div = p5.createDiv()
+            div.style('display', 'flex')
+            
+            let slider = p5.createSlider(0., 100.)
+            slider.style('width', '16vw')
+            slider.style('transform', 'scale(1, 1.3)')
+            
+            
+            
+            let maxLabel = p5.createP(maxText)
+            let minLabel = p5.createP(minText)
+            div.child(minLabel)
+            div.child(slider)
+            div.child(maxLabel)
+            
+            container.child(div)
+            // div.style('position', 'relative')
+            // div.position(container.style('width')/2, 50, 'inherit')
+            return slider
+        }
+
+        let masterLvl
+        //pre-declaring buttons for bigger scope
+        let reset
+        let controls
+        let info 
+        let buttons = []
+
+        let infoBubble
+        let controlMenu
+
+        let volSlider
+        let rateSlider
+        let depthSlider
+        
         p5.setup = () => {
             p5.frameRate(frameRate)
+            reset = p5.uiButton(50, '🔄')
+            controls = p5.uiButton(150, '🎛️')
+            info = p5.uiButton(250, 'ℹ️')
+            buttons.push(reset, controls, info)
+            
+            infoBubble = p5.uiPopup(info, infoText)
+            infoBubble.style('width', '35vw')
+
+
+            controlMenu = p5.uiPopup(controls, "")
+
+            volSlider = p5.controlParam(controlMenu, "🔇", "🔊")
+            depthSlider = p5.controlParam(controlMenu, "💧", "🌊")
+            rateSlider = p5.controlParam(controlMenu, "☁️", "💨")
+            depthSlider.value(25)
+            rateSlider.value(25)
+
+            
+                
+            
+            
+            reset.mousePressed(newZone)
             if(renderNum===1){
                 for(let i=0; i<drones.length; i++){
-                    let newNode = new DroneNode((Math.random() * width/5) + width/2, (Math.random() * height/5) + height/2, Math.random()*20+20, i)
+                    
+                    let newNode = new DroneNode((Math.random() * p5.windowWidth/5) + p5.windowWidth/2, (Math.random() * p5.windowHeight/5) + p5.windowHeight/2, Math.random()*20+20, i)
                     droneNodes.push(newNode)
                 }  
+
+                player1 = new Tone.Player(ambience, ()=>{console.log("LOADED")}).toDestination()
+                player1.fadeIn = 4
+                player1.fadeOut = 4
+                player1.playbackRate = p5.map(Math.random(), 0, 1, 0.6, 1.)
+                player1.volume.value = p5.map(player1.playbackRate, 0.4, 1, 10, 0)
                 console.log("canvas created")
-                return p5.createCanvas(width, height)
+                return p5.createCanvas(p5.windowWidth, p5.windowHeight)
             } else if(renderNum<2){ 
                 setRenderNum(renderNum + 1)
             }
-        };
 
-        p5.draw = () => {
-            // p5.blendMode(p5.SUBTRACT)
-            let masterLvl
-            let fadeColor = bgColor
-            p5.background(bgColor);
-            droneNodes.forEach((d)=>{
-                d.display()
-            masterLvl = d.droneSource.masterMeter.getValue()
-            })
-            fadeColor.setAlpha(p5.map(masterLvl, 0., 0.2, 150, 0))
-            p5.fill(fadeColor)
-            p5.rect(0, 0, width, height)
-
-            // p5.keyPressed = () => {
-            //     if (p5.keyCode === p5.LEFT_ARROW) {
-            //         // droneNodes.forEach((d)=>{
-            //         //     d.pulses.push(new Pulse(Math.random()*4+1, Math.floor(Math.random() * 40 + 5), d.id))
-            //         // })
-            //         droneNodes.forEach((d)=>{d.wobblyCircle()})
-            //     }
-            // }
+           
+                
+           
+            
             
         };
+
+        p5.setRateParams = (val) => {
+            if(droneNodes.length>0){
+                droneNodes.forEach((dn)=>{
+                    dn.droneSource.rateControlParams.forEach((param)=>{
+                        if(param.type==="signal"){
+                            param.param.linearRampTo(p5.map(val, 0, 100, param.min, param.max), 0.25)
+                        }
+                    })
+                })
+            }
+        }
+
+        p5.setDepthParams = (val) => {
+            if(droneNodes.length>0){
+                droneNodes.forEach((dn)=>{
+                    dn.modInterval = p5.map(val, 0, 100, dn.ogModInterval * 4, dn.ogModInterval / 2)
+                    
+                    dn.droneSource.depthControlParams.forEach((param)=>{
+                        let targetVal = p5.map(val, 0, 100, param.min, param.max)
+                        if(param.type==="signal"){
+                            console.log()
+                            param.param.linearRampTo(targetVal, 0.25)
+                        } else {
+                            param.param = targetVal
+                        }
+                    })
+                })
+            }
+        }
+
+        p5.triggerAmbience = () => {
+            if(player1.loaded){
+                player1.fadeIn = 4
+                // player1.onstop(()=>{
+                //     initTint-=1
+                //     console.log("tint fadeout initiated!")
+                // })
+                player1.start("+0.1", p5.map(Math.random(), 0, 1, 0, player1.buffer.duration*0.6))
+            }
+            
+        }
+
+        
+        p5.draw = () => {
+            // p5.blendMode(p5.SUBTRACT)
+            if(volSlider){
+                setVolume(volSlider.value()/100)
+            }
+            if(rateSlider){
+                p5.setRateParams(rateSlider.value())
+            }
+            if(depthSlider){
+                p5.setDepthParams(depthSlider.value())
+            }
+            
+            let fadeColor = bgColor
+            let buttonColor = p5.color(255, 255, 255, 35)
+            let buttonTextColor = buttonColor
+            
+            p5.background(bgColor);
+            if(p5.mouseX<=p5.windowWidth/2 && p5.mouseY<=p5.windowHeight/2){
+                let dist = p5.dist(p5.mouseX, p5.mouseY, 0, 0)
+               buttonColor.setAlpha(p5.map(dist, 0, Math.sqrt(Math.pow(p5.windowWidth/2, 2) + Math.pow(p5.windowHeight/2, 2)), 255, 35))
+                
+            }
+            
+            // info.mousePressed(()=>{
+                
+            //     infoBubble.show()
+            // })
+
+            // infoBubbleColor = buttonColor
+            
+            // infoBubbleColor.setAlpha(p5.alpha(buttonColor)/1.5)
+            // infoBubble.style("color", `rgba(0, 0, 0, ${p5.alpha(buttonColor)/255*2.5})`)
+            // infoBubble.style("background-color", infoBubbleColor)
+
+            let currentSize
+            buttons.forEach((b)=>{
+                let timer = parseInt(b.attribute('motionTimer'))
+                let time = parseInt(b.attribute('motionTime'))
+                let ogSize = parseInt(b.attribute('ogSize'))
+                let maxScale = parseFloat(b.attribute('maxScale'))
+                if(b.attribute('status')==="focus"){
+                    
+                    if(timer<time){
+                        currentSize = p5.map(timer, 0, time, ogSize, ogSize*maxScale)
+                        // b.style("font-size", currentSize+"pt")
+                        b.attribute('motionTimer', timer+1)
+                        console.log(maxScale)
+                    } 
+                } else if(b.attribute('status')==="defocus"){
+                    if(timer<time){
+                        currentSize = p5.map(timer, 0, time, ogSize*maxScale, ogSize)
+                        // b.style("font-size", currentSize+"pt")
+                        
+                        b.attribute('motionTimer', timer+1)
+                        // console.log(b.attribute('motionTimer'))
+                    } else {
+                        
+                        b.attribute('status', 'normal')
+                        b.attribute('motionTimer', 0)
+                    }
+                }
+                buttonTextColor.setAlpha(p5.alpha(buttonColor))
+                b.style('color', buttonTextColor.toString())
+                // b.style('background-color', buttonColor.toString())
+            })  
+            droneNodes.forEach((d, i)=>{
+                if(i===0 && d.age%3===0){
+                    masterLvl = d.droneSource.masterMeter.getValue()
+                    console.log("MASTER LVL " + masterLvl)
+                    if(masterLvl>=0.001 && player1.state==="started"){
+                        player1.stop("+0.3")
+                        initTint-=1
+                        console.log("tint fadeout initiated!")
+                        console.log("ambience stopped")
+                    }
+                }
+                d.display()
+            })
+            
+
+            
+            
+            fadeColor.setAlpha(p5.map(masterLvl, 0., 0.1, 110, 0) + p5.map(initTint, 0, 20, 0, 70))
+            p5.fill(fadeColor)
+            p5.rect(0, 0, p5.windowWidth, p5.windowHeight)
+
+            if(initTint<20 && initTint>0){ // initTint countdown starts when it becomes < 20, which is triggered by ambience stopping
+                initTint-=1
+
+            } 
+
+        };
     }
-            return (
-                <div>
-                    {<ReactP5Wrapper key={renderNum} sketch={sketch} />}
-                </div>
-            )
+
+    const setVolume = (val) => {
+        if(droneNodes.length>0){
+            droneNodes[0].droneSource.outputGain.gain.linearRampTo(val, 0.15)
+        }
     }
+
+    
+
+    const blendParams = () => {
+        let blendTime = 3.0 //seconds since it's an audio action
+        
+        let avgParams = {}
+       
+        droneNodes.forEach((dn)=>{
+            Object.keys(dn.droneSource.params).forEach((param)=>{
+                if(!avgParams[param]){
+                    avgParams[param] = []
+                }
+                if(dn.droneSource.params[param].name){
+                    avgParams[param].push(dn.droneSource.params[param])
+                }
+                // else {
+                //     avgParams[param].push(dn.droneSource.params[param])
+                // }
+             })
+        })
+
+        Object.keys(avgParams).forEach((paramArray)=>{
+            let avg = paramArray.reduce((total, current)=>{
+                return total + current.value
+            })/paramArray.length
+            paramArray.forEach((p)=>{
+                p.linearRampTo(avg, blendTime)
+            })
+        })
+        
+    }
+
+    const scatterParams = () => {
+        let scatterTime = 3.0
+        droneNodes.forEach((dn)=> {
+            for (let n=0; n<25; n++){
+                dn.randomMod(scatterTime)
+            }
+            
+        })
+    }
+
+    return (
+        <div>
+            {/* <button onClick={blendParams}>blend</button>
+            <button onClick={scatterParams}>scatter</button> */}
+            {/* <input type="range" onChange={blendParams}/> */}
+            {/* <button onClick={newZone}>RELOAD</button> */}
+            {<ReactP5Wrapper key={renderNum} sketch={sketch} />}
+        </div>
+    )
+}
 export default React.memo(Visual)
 

@@ -5,7 +5,7 @@ import Visual from './components/Visual'
 function App() {
   console.log("app rendered")
   return (
-    <div className="App">
+    <div className="App" id="app">
       <Ensemble />
       <Visual />
     </div>
