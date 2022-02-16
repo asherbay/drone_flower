@@ -150,7 +150,7 @@ const Ensemble = () => {
 
     const resetContext = () => {
         Tone.getContext().dispose()
-        Tone.setContext(new AudioContext({ sampleRate: 24000, lookAhead: 3.0}))
+        Tone.setContext(new AudioContext({ sampleRate: 22000, lookAhead: 1.0}))
         Tone.start()
     }
     const newEnsemble = () => {

@@ -1,8 +1,9 @@
 import React, {useEffect, useState, useContext}  from "react";
 import { ReactP5Wrapper } from "react-p5-wrapper";
-// import * as Tone from 'tone'
+import * as Tone from 'tone'
 import {DroneContext} from '../providers/DroneProvider'
 import {Vector} from "p5"
+import ambience from '../audio/ambience.mp3'
 
 //since pulse as a class hasn't been working, try pulses as an array of objects {pulseLifespan, pulseAge, magnitude, target color, id}
 const Visual = () =>{
@@ -20,7 +21,8 @@ const Visual = () =>{
 
     let droneNodes = []
     let volumeSlider
-
+    let player1 
+    let initTint = 20
     useEffect(()=>{
         console.log("wrapper returned")
         // setLoaded(true)
@@ -177,7 +179,7 @@ const Visual = () =>{
                     let prog = (this.newNoteTransTimer / this.newNoteTransTime)
 
                     if(this.twiddleDepth){
-                        prog = prog * this.twiddleDepth
+                        prog = prog * this.twiddleDepth * p5.map(initTint, 0, 20, 1., 0.1)
                         
                     }
                     this.newNoteTransTimer++
@@ -214,10 +216,10 @@ const Visual = () =>{
                     this.droneSource.voiceStep(this.droneSource, depthSlider.value()/100)
                 }
                 p5.noStroke();
-                
+
                 
 
-                let outputLvl = p5.lerp(this.prevLvl, this.droneSource.meter.getValue(), this.reactivity)
+                let outputLvl = p5.lerp(this.prevLvl, this.droneSource.meter.getValue(), this.reactivity * p5.map(rateSlider.value(), 0, 100, 0.7, 1.9))
                 this.outputLvl = outputLvl
                 this.prevLvl = outputLvl
                 // let freq = this.droneSource.freq.value
@@ -246,7 +248,7 @@ const Visual = () =>{
                 
 
                 // console.log("RATE MODIFIER " + outputLvl * (rateSlider.value()/100) )
-                this.wobblyCircle(this.wobbliness * p5.map(depthSlider.value(), 0, 100, 0.45, 2.5), this.rx, p5.map(outputLvl * 0.8 * (rateSlider.value()/(100 + this.wobbliness * p5.map(depthSlider.value(), 0, 100, 0.45, 2.5))) * (p5.map(this.width, p5.windowWidth/11, p5.windowWidth, 1.4, 0.002)), 0, 1, 0.005, 0.035 ), outputLvl)
+                this.wobblyCircle(this.wobbliness * p5.map(depthSlider.value(), 0, 100, 0.45, 2.5), this.rx * p5.map(initTint, 0, 20, 1., 0.6), p5.map(outputLvl * 0.8 * (rateSlider.value()/(100 + this.wobbliness * p5.map(depthSlider.value(), 0, 100, 0.45, 2.5))) * (p5.map(this.width, p5.windowWidth/11, p5.windowWidth, 1.4, 0.002)), 0, 1, 0.005, 0.035 ) * p5.map(initTint, 0, 20, 1., 0.6), outputLvl)
 
                 
                     this.newNote()
@@ -587,6 +589,15 @@ const Visual = () =>{
                 }
             })
 
+            //if(masterLvl<=0.01 && player1.state!== "started"){
+
+            if(initTint>0 && player1){
+                console.log("ambience triggered!")
+                player1.fadeIn = 4
+                p5.triggerAmbience()
+            }
+                
+
             if(Math.random()>0.83){
                 p5.shuffle(droneNodes, true)
                 console.log("new order")
@@ -595,7 +606,8 @@ const Visual = () =>{
                 // console.log(dn.left, dn.right, dn.top, dn.bottom,)
                 if(p5.mouseX>=dn.left && p5.mouseX<=dn.right && p5.mouseY>=dn.top && p5.mouseY<=dn.bottom){
                     if(dn.droneSource.playing===false){
-                        // console.log("started!")
+                        // FIRST CLICK
+                        
                         dn.droneSource.setPlaying(true)
                         dn.droneSource.synth.triggerAttack(dn.droneSource.synth.oscillator.frequency.value)
                         dn.newNoteTransTime = Math.floor(Math.random() * 40) + 20
@@ -735,6 +747,7 @@ const Visual = () =>{
             return slider
         }
 
+        let masterLvl
         //pre-declaring buttons for bigger scope
         let reset
         let controls
@@ -747,6 +760,7 @@ const Visual = () =>{
         let volSlider
         let rateSlider
         let depthSlider
+        
         p5.setup = () => {
             p5.frameRate(frameRate)
             reset = p5.uiButton(50, '🔄')
@@ -762,34 +776,12 @@ const Visual = () =>{
 
             volSlider = p5.controlParam(controlMenu, "🔇", "🔊")
             depthSlider = p5.controlParam(controlMenu, "💧", "🌊")
-            rateSlider = p5.controlParam(controlMenu, "☁️", "🌪️")
+            rateSlider = p5.controlParam(controlMenu, "☁️", "💨")
             depthSlider.value(25)
             rateSlider.value(25)
 
-            // volControl = p5.createDiv()
-            // volControl.style('display', 'flex')
-            // volumeSlider = p5.createSlider(0., 100.)
-            // maxVolLabel = p5.createP("🔊")
-            // minVolLabel = p5.createP("🔇")
-            // volControl.child(minVolLabel)
-            // volControl.child(volumeSlider)
-            // volControl.child(maxVolLabel)
-            // controlMenu.child(volControl)
-            // let popupColor = p5.color(255, 255, 255, 80)
-            // let textColor  = p5.color(0, 0, 0, 170)
-            // infoBubble = p5.createP(infoText)
-            // infoBubble.position(info.position().x, info.position().y + 50)
-            // infoBubble.class("speech")
-            // infoBubble.style("font-size", "23pt")
-            // infoBubble.style("width", "20vw")
-            // infoBubble.style("padding", "17px")
-            // infoBubble.style("background-color", popupColor)
-            // infoBubble.style("color", textColor)
-            // infoBubble.style("text-align", "left")
-            // infoBubble.style("border-radius", "5%")
-            // infoBubble.hide()
             
-          
+                
             
             
             reset.mousePressed(newZone)
@@ -799,12 +791,21 @@ const Visual = () =>{
                     let newNode = new DroneNode((Math.random() * p5.windowWidth/5) + p5.windowWidth/2, (Math.random() * p5.windowHeight/5) + p5.windowHeight/2, Math.random()*20+20, i)
                     droneNodes.push(newNode)
                 }  
+
+                player1 = new Tone.Player(ambience, ()=>{console.log("LOADED")}).toDestination()
+                player1.fadeIn = 4
+                player1.fadeOut = 4
+                player1.playbackRate = p5.map(Math.random(), 0, 1, 0.6, 1.)
+                player1.volume.value = p5.map(player1.playbackRate, 0.4, 1, 10, 0)
                 console.log("canvas created")
                 return p5.createCanvas(p5.windowWidth, p5.windowHeight)
             } else if(renderNum<2){ 
                 setRenderNum(renderNum + 1)
             }
 
+           
+                
+           
             
             
         };
@@ -839,8 +840,19 @@ const Visual = () =>{
             }
         }
 
+        p5.triggerAmbience = () => {
+            if(player1.loaded){
+                player1.fadeIn = 4
+                // player1.onstop(()=>{
+                //     initTint-=1
+                //     console.log("tint fadeout initiated!")
+                // })
+                player1.start("+0.1", p5.map(Math.random(), 0, 1, 0, player1.buffer.duration*0.6))
+            }
+            
+        }
 
-        let masterLvl
+        
         p5.draw = () => {
             // p5.blendMode(p5.SUBTRACT)
             if(volSlider){
@@ -909,16 +921,28 @@ const Visual = () =>{
             droneNodes.forEach((d, i)=>{
                 if(i===0 && d.age%3===0){
                     masterLvl = d.droneSource.masterMeter.getValue()
+                    console.log("MASTER LVL " + masterLvl)
+                    if(masterLvl>=0.001 && player1.state==="started"){
+                        player1.stop("+0.3")
+                        initTint-=1
+                        console.log("tint fadeout initiated!")
+                        console.log("ambience stopped")
+                    }
                 }
                 d.display()
             })
             
 
             
-
-            fadeColor.setAlpha(p5.map(masterLvl, 0., 0.2, 135, 0))
+            
+            fadeColor.setAlpha(p5.map(masterLvl, 0., 0.1, 110, 0) + p5.map(initTint, 0, 20, 0, 70))
             p5.fill(fadeColor)
             p5.rect(0, 0, p5.windowWidth, p5.windowHeight)
+
+            if(initTint<20 && initTint>0){ // initTint countdown starts when it becomes < 20, which is triggered by ambience stopping
+                initTint-=1
+
+            } 
 
         };
     }
