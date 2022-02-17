@@ -16,8 +16,8 @@ const Visual = () =>{
     
     const [renderNum, setRenderNum] = useState(0)
     // const [homogeneity, setHomogeneity] = useState(0)
-    const infoText = `Drone Flower is an audiovisual experience generator. Watch and listen as the shapes and sounds evolve endlessly. Interact by clicking shapes or changing parameters in the 🎛️ menu. ${<br/>} Made with p5.js (visuals) and Tone.js (sound)`
-    
+    const infoText = `Drone Flower is an audiovisual experience generator. Watch and listen as the shapes and sounds evolve endlessly. Interact by clicking shapes or changing parameters in the 🎛️ menu.`
+    const credits = `Made by Asher Bay with Tone.js (sound) and P5.js (visuals).`
 
     let droneNodes = []
     let volumeSlider
@@ -706,15 +706,15 @@ const Visual = () =>{
         }
 
         let uiPopups = []
-        
+        let popupColor = p5.color(255, 255, 255, 80)
         p5.uiPopup = (originElement, text) => {
             let popup = p5.createP(text)
-            let popupColor = p5.color(255, 255, 255, 80)
+            
             let textColor  = p5.color(0, 0, 0, 170)
             popupFontSize = p5.map(p5.windowHeight, 500, 1500, 15, 35)
 
 
-            popup.position(originElement.position().x, originElement.position().y + 50)
+            popup.position(originElement.position().x + 3, originElement.position().y + buttonSize/2 + 5)
             popup.class("speech")
             popup.style("font-size", popupFontSize + "pt")
             popup.style("width", "20vw")
@@ -722,12 +722,13 @@ const Visual = () =>{
             popup.style("background-color", popupColor)
             popup.style("color", textColor)
             popup.style("text-align", "left")
-            popup.style("border-radius", "5%")
+            popup.style("border-radius", "2%")
             popup.style("display", "flex")
             popup.style("align-items", "center")
             popup.attribute("originElement", originElement)
             popup.attribute("hover", false)
             originElement.mousePressed(()=>{
+                
                 popup.show()
             })
             
@@ -778,6 +779,7 @@ const Visual = () =>{
             container.child(div)
             // div.style('position', 'relative')
             // div.position(container.style('width')/2, 50, 'inherit')
+            // div.center('horizontal')
             return slider
         }
 
@@ -810,10 +812,14 @@ const Visual = () =>{
             buttons.push(reset, controls, info)
             
             infoBubble = p5.uiPopup(info, infoText)
-            infoBubble.style('width', '35vw')
+            infoBubble.style('width', '45vw')
+            infoBubble.style('margin-right', '-30px')
+            infoBubble.style('margin-bottom', '-30px')
+            infoBubble.child(p5.createP(credits))
 
 
             controlMenu = p5.uiPopup(controls, "")
+            
 
             volSlider = p5.controlParam(controlMenu, "🔇", "🔊")
             depthSlider = p5.controlParam(controlMenu, "💧", "🌊")
@@ -893,9 +899,11 @@ const Visual = () =>{
             
         }
 
-        
+        let buttonColor = p5.color(255, 255, 255, 35)
         p5.draw = () => {
-            // p5.blendMode(p5.SUBTRACT)
+            
+
+            p5.blendMode(p5.BLEND)
             if(volSlider){
                 setVolume(volSlider.value()/100)
             }
@@ -907,15 +915,29 @@ const Visual = () =>{
             }
             
             let fadeColor = bgColor
-            let buttonColor = p5.color(255, 255, 255, 35)
+           
             let buttonTextColor = buttonColor
-            
+            let dist = p5.dist(p5.mouseX, p5.mouseY, 0, 0)
+            if(uiPopups.every((pu)=>{
+                    return pu.style('display')==='none'
+                })){
+                    buttonColor.setAlpha(p5.map(dist, 0, Math.sqrt(Math.pow(p5.windowWidth/2, 2) + Math.pow(p5.windowHeight/2, 2)), 255, 45, true))
+                }
+
+
             p5.background(bgColor);
-            if(p5.mouseX<=p5.windowWidth/2 && p5.mouseY<=p5.windowHeight/2){
-                let dist = p5.dist(p5.mouseX, p5.mouseY, 0, 0)
-               buttonColor.setAlpha(p5.map(dist, 0, Math.sqrt(Math.pow(p5.windowWidth/2, 2) + Math.pow(p5.windowHeight/2, 2)), 255, 35, true))
-                
-            }
+            
+            // let triWidth = 40
+            // let triHeight = 15
+            // let triOffsetX = 0
+            // let triOffsetY = 30
+            // uiPopups.forEach((pu)=>{
+            //     if(pu.style('display')!=='none'){
+            //         // p5.blendMode(p5.EXCLUSION)
+            //         p5.fill(p5.color(255, 255, 255, 40))
+            //         p5.triangle(pu.position().x, pu.position().y, pu.position().x + triWidth, pu.position().y, pu.position().x, pu.position().y-triHeight)
+            //     }
+            // })
             
             // info.mousePressed(()=>{
                 
@@ -956,7 +978,7 @@ const Visual = () =>{
                     }
                 }
                 buttonTextColor.setAlpha(p5.alpha(buttonColor))
-                b.style('color', buttonTextColor.toString())
+                b.style('color', buttonColor.toString())
                 // b.style('background-color', buttonColor.toString())
             })  
             droneNodes.forEach((d, i)=>{
@@ -984,7 +1006,8 @@ const Visual = () =>{
                 initTint-=1
 
             } 
-
+        
+        
         };
     }
 
