@@ -604,7 +604,7 @@ const Visual = () =>{
             }
 
 
-            if(droneNodes[0].droneSource.playing===false){
+            if(droneNodes.length>0 && droneNodes[0].droneSource.playing===false){
                 // FIRST CLICK
                 
                 droneNodes[0].droneSource.setPlaying(true)
@@ -642,16 +642,25 @@ const Visual = () =>{
 
         let buttonSize
         let popupFontSize
+        let smallestDimension
         p5.windowResized = () => {
             p5.resizeCanvas(p5.windowWidth, p5.windowHeight)
-            buttonSize = p5.map(p5.windowHeight, 500, 1500, 23, 40)
-            buttons.forEach((b)=>{
+            smallestDimension = Math.min(p5.windowWidth, p5.windowHeight)
+            buttonSize = p5.map(smallestDimension, 500, 1500, 23, 40)
+            buttonSpacing = p5.windowWidth * 0.02 + buttonSize
+
+            popupFontSize = p5.map(smallestDimension, 500, 1500, 15, 35)
+            buttons.forEach((b, i)=>{
                 b.style('font-size', buttonSize + "pt")
+                b.position(buttonSpacing * (i + 1) + buttonOffset)
             })
-            uiPopups.forEach((pu)=>{
+            uiPopups.forEach((pu, i)=>{
                 pu.style('font-size', popupFontSize + "pt")
+                pu.position(buttons[2-i].position().x)
+                
+                // pu.position(pu.originElement.position().x, pu.originElement.position().y + 50)
             })
-            popupFontSize = p5.map(p5.windowHeight, 500, 1500, 15, 35)
+            
             droneNodes.forEach((dn)=>{
                 dn.position = [p5.windowWidth/2, p5.windowHeight/2]
             })
@@ -659,13 +668,16 @@ const Visual = () =>{
         
         p5.uiButton = (xPos, text,)=>{
             let button = p5.createP(text)
-            buttonSize = p5.map(p5.windowHeight, 500, 1500, 23, 40)
+            smallestDimension = Math.min(p5.windowWidth, p5.windowHeight)
+            buttonSize = p5.map(smallestDimension, 500, 1500, 23, 40)
+
             button.style('text-align', 'justify')
             button.style('color', 'rgba(255, 255, 255, 255)')
             // button.style('background-color', 'rgba(255, 255, 255, 0)')
             
 
             button.position(xPos, 5)
+            
             // button.size(size, size)
             button.style('font-size', buttonSize + "pt")
             button.style('padding-right', "8px")
@@ -704,7 +716,7 @@ const Visual = () =>{
 
             popup.position(originElement.position().x, originElement.position().y + 50)
             popup.class("speech")
-            popup.style("font-size", "33pt")
+            popup.style("font-size", popupFontSize + "pt")
             popup.style("width", "20vw")
             popup.style("padding", "17px")
             popup.style("background-color", popupColor)
@@ -717,7 +729,6 @@ const Visual = () =>{
             popup.attribute("hover", false)
             originElement.mousePressed(()=>{
                 popup.show()
-                
             })
             
             popup.mouseOver(()=>{
@@ -783,12 +794,19 @@ const Visual = () =>{
         let volSlider
         let rateSlider
         let depthSlider
-        
+        let buttonSpacing = p5.windowWidth * 0.02 + buttonSize
+        let buttonOffset = -35
         p5.setup = () => {
             p5.frameRate(frameRate)
-            reset = p5.uiButton(50, '🔄')
-            controls = p5.uiButton(150, '🎛️')
-            info = p5.uiButton(250, 'ℹ️')
+            
+            smallestDimension = Math.min(p5.windowWidth, p5.windowHeight)
+            buttonSize = p5.map(smallestDimension, 500, 1500, 23, 40)
+            buttonSpacing = p5.windowWidth * 0.02 + buttonSize
+             
+            console.log("buttonSpacing: " + buttonSize)
+            reset = p5.uiButton(buttonSpacing + buttonOffset, '🔄')
+            controls = p5.uiButton(buttonSpacing * 2 + buttonOffset, '🎛️')
+            info = p5.uiButton(buttonSpacing * 3 + buttonOffset, 'ℹ️')
             buttons.push(reset, controls, info)
             
             infoBubble = p5.uiPopup(info, infoText)
@@ -944,7 +962,7 @@ const Visual = () =>{
             droneNodes.forEach((d, i)=>{
                 if(i===0 && d.age%3===0){
                     masterLvl = d.droneSource.masterMeter.getValue()
-                    console.log("MASTER LVL " + masterLvl)
+                    
                     if(masterLvl>=0.001 && player1.state==="started"){
                         player1.stop("+0.3")
                         initTint-=1
