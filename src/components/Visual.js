@@ -913,7 +913,7 @@ const Visual = () =>{
             p5.background(bgColor);
             if(p5.mouseX<=p5.windowWidth/2 && p5.mouseY<=p5.windowHeight/2){
                 let dist = p5.dist(p5.mouseX, p5.mouseY, 0, 0)
-               buttonColor.setAlpha(p5.map(dist, 0, Math.sqrt(Math.pow(p5.windowWidth/2, 2) + Math.pow(p5.windowHeight/2, 2)), 255, 35))
+               buttonColor.setAlpha(p5.map(dist, 0, Math.sqrt(Math.pow(p5.windowWidth/2, 2) + Math.pow(p5.windowHeight/2, 2)), 255, 35, true))
                 
             }
             
