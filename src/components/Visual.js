@@ -631,7 +631,7 @@ const Visual = () =>{
                             dn.randomMod((dn.newNoteTransTime / frameRate) / (Math.random() * 5)+1)
                         }   
                         return
-                        }
+                    }
                     
 
                 }
@@ -640,17 +640,26 @@ const Visual = () =>{
             
         }
 
-        
+        let buttonSize
+        let popupFontSize
         p5.windowResized = () => {
             p5.resizeCanvas(p5.windowWidth, p5.windowHeight)
+            buttonSize = p5.map(p5.windowHeight, 500, 1500, 23, 40)
+            buttons.forEach((b)=>{
+                b.style('font-size', buttonSize + "pt")
+            })
+            uiPopups.forEach((pu)=>{
+                pu.style('font-size', popupFontSize + "pt")
+            })
+            popupFontSize = p5.map(p5.windowHeight, 500, 1500, 15, 35)
             droneNodes.forEach((dn)=>{
                 dn.position = [p5.windowWidth/2, p5.windowHeight/2]
             })
         }
-
+        
         p5.uiButton = (xPos, text,)=>{
             let button = p5.createP(text)
-            let size = 40
+            buttonSize = p5.map(p5.windowHeight, 500, 1500, 23, 40)
             button.style('text-align', 'justify')
             button.style('color', 'rgba(255, 255, 255, 255)')
             // button.style('background-color', 'rgba(255, 255, 255, 0)')
@@ -658,12 +667,12 @@ const Visual = () =>{
 
             button.position(xPos, 5)
             // button.size(size, size)
-            button.style('font-size', size + "pt")
+            button.style('font-size', buttonSize + "pt")
             button.style('padding-right', "8px")
             button.style('padding-left', "8px")
             button.style('border-radius', "8px")
 
-            button.attribute('ogSize', size)
+            button.attribute('ogSize', buttonSize)
             button.attribute('maxScale', 1.3)
             button.attribute('status', 'normal')
             button.attribute('motionTimer', 0)
@@ -685,11 +694,14 @@ const Visual = () =>{
         }
 
         let uiPopups = []
+        
         p5.uiPopup = (originElement, text) => {
             let popup = p5.createP(text)
             let popupColor = p5.color(255, 255, 255, 80)
             let textColor  = p5.color(0, 0, 0, 170)
-            
+            popupFontSize = p5.map(p5.windowHeight, 500, 1500, 15, 35)
+
+
             popup.position(originElement.position().x, originElement.position().y + 50)
             popup.class("speech")
             popup.style("font-size", "33pt")
@@ -914,15 +926,15 @@ const Visual = () =>{
                     } 
                 } else if(b.attribute('status')==="defocus"){
                     if(timer<time){
-                        currentSize = p5.map(timer, 0, time, ogSize*maxScale, ogSize)
+                        // currentSize = p5.map(timer, 0, time, ogSize*maxScale, ogSize)
                         // b.style("font-size", currentSize+"pt")
                         
-                        b.attribute('motionTimer', timer+1)
+                        // b.attribute('motionTimer', timer+1)
                         // console.log(b.attribute('motionTimer'))
                     } else {
                         
                         b.attribute('status', 'normal')
-                        b.attribute('motionTimer', 0)
+                        // b.attribute('motionTimer', 0)
                     }
                 }
                 buttonTextColor.setAlpha(p5.alpha(buttonColor))
