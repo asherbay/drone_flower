@@ -1,9 +1,11 @@
-import React, {useEffect, useState, useContext}  from "react";
+import React, {useEffect, useState, useContext, useRef}  from "react";
 import { ReactP5Wrapper } from "react-p5-wrapper";
 import * as Tone from 'tone'
 import {DroneContext} from '../providers/DroneProvider'
 import {Vector} from "p5"
 import ambience from '../audio/ambience.mp3'
+import Menu, {Item} from './Menu'
+import scale from './Scale'
 
 //since pulse as a class hasn't been working, try pulses as an array of objects {pulseLifespan, pulseAge, magnitude, target color, id}
 const Visual = () =>{
@@ -48,6 +50,8 @@ const Visual = () =>{
         const rndColorVal = () => {return Math.floor(Math.random()*256)}
         const blendingModes = [p5.BLEND, p5.BLEND, p5.HARD_LIGHT,] //p5.LIGHTEST, p5.HARD_LIGHT] //p5.DIFFERENCE, p5.EXCLUSION,]// p5.HARD_LIGHT,]// p5.BURN,]
         const echoBlendingModes = [p5.BLEND, p5.SOFT_LIGHT, p5.SOFT_LIGHT, p5.HARD_LIGHT, p5.BURN,]
+
+        
         let width = p5.windowWidth
         let height = p5.windowHeight
         let bgColor = p5.color(rndColorVal(), rndColorVal(), rndColorVal(), 255)    
@@ -690,11 +694,11 @@ const Visual = () =>{
             button.attribute('motionTimer', 0)
             button.attribute('motionTime', 3)
             button.mouseOver(()=>{
-                button.style("background-color", "rgba(255, 255, 255, 0.2)")
+                button.style("background-color", "rgba(255, 255, 255, 0.)")
                 
                 button.attribute('status', 'focus')
                 button.attribute('motionTimer', 0)
-                document.body.style.cursor = "pointer"
+                document.body.style.cursor = "default"
             })
             button.mouseOut(()=>{
                 button.style("background-color", "transparent")
@@ -706,11 +710,11 @@ const Visual = () =>{
         }
 
         let uiPopups = []
-        let popupColor = p5.color(255, 255, 255, 80)
+        let popupColor = p5.color(255, 255, 255, 0)
         p5.uiPopup = (originElement, text) => {
             let popup = p5.createP(text)
             
-            let textColor  = p5.color(0, 0, 0, 170)
+            let textColor  = p5.color(0, 0, 0, 0)
             popupFontSize = p5.map(p5.windowHeight, 500, 1500, 15, 35)
 
 
@@ -733,7 +737,7 @@ const Visual = () =>{
             })
             
             popup.mouseOver(()=>{
-                popup.attribute("hover", true)
+                popup.attribute("hover", false)
 
             })
              popup.mouseOut(()=>{
@@ -743,9 +747,9 @@ const Visual = () =>{
 
 
             originElement.mouseOver(()=>{
-                popup.attribute("hover", true)
-                document.body.style.cursor = "pointer"
-                originElement.style("background-color", "rgba(255, 255, 255, 0.2)")
+                popup.attribute("hover", false)
+                document.body.style.cursor = "default"
+                originElement.style("background-color", "rgba(255, 255, 255, 0.)")
                 // console.log("hovering! " + popup.attribute("hover"))
             })
             originElement.mouseOut(()=>{
@@ -806,7 +810,7 @@ const Visual = () =>{
             buttonSpacing = p5.windowWidth * 0.02 + buttonSize
              
             console.log("buttonSpacing: " + buttonSize)
-            reset = p5.uiButton(buttonSpacing + buttonOffset, '🔄')
+            reset = p5.uiButton(buttonSpacing + buttonOffset * 10, '🔄')
             controls = p5.uiButton(buttonSpacing * 2 + buttonOffset, '🎛️')
             info = p5.uiButton(buttonSpacing * 3 + buttonOffset, 'ℹ️')
             buttons.push(reset, controls, info)
@@ -899,7 +903,7 @@ const Visual = () =>{
             
         }
 
-        let buttonColor = p5.color(255, 255, 255, 35)
+        let buttonColor = p5.color(255, 255, 255, 0)
         p5.draw = () => {
             
 
@@ -921,35 +925,12 @@ const Visual = () =>{
             if(uiPopups.every((pu)=>{
                     return pu.style('display')==='none'
                 })){
-                    buttonColor.setAlpha(p5.map(dist, 0, Math.sqrt(Math.pow(p5.windowWidth/2, 2) + Math.pow(p5.windowHeight/2, 2)), 255, 45, true))
+                    buttonColor.setAlpha(p5.map(dist, 0, Math.sqrt(Math.pow(p5.windowWidth/2, 2) + Math.pow(p5.windowHeight/2, 2)), 0, 0, true))
                 }
 
 
             p5.background(bgColor);
             
-            // let triWidth = 40
-            // let triHeight = 15
-            // let triOffsetX = 0
-            // let triOffsetY = 30
-            // uiPopups.forEach((pu)=>{
-            //     if(pu.style('display')!=='none'){
-            //         // p5.blendMode(p5.EXCLUSION)
-            //         p5.fill(p5.color(255, 255, 255, 40))
-            //         p5.triangle(pu.position().x, pu.position().y, pu.position().x + triWidth, pu.position().y, pu.position().x, pu.position().y-triHeight)
-            //     }
-            // })
-            
-            // info.mousePressed(()=>{
-                
-            //     infoBubble.show()
-            // })
-
-            // infoBubbleColor = buttonColor
-            
-            // infoBubbleColor.setAlpha(p5.alpha(buttonColor)/1.5)
-            // infoBubble.style("color", `rgba(0, 0, 0, ${p5.alpha(buttonColor)/255*2.5})`)
-            // infoBubble.style("background-color", infoBubbleColor)
-
             let currentSize
             buttons.forEach((b)=>{
                 let timer = parseInt(b.attribute('motionTimer'))
@@ -966,11 +947,7 @@ const Visual = () =>{
                     } 
                 } else if(b.attribute('status')==="defocus"){
                     if(timer<time){
-                        // currentSize = p5.map(timer, 0, time, ogSize*maxScale, ogSize)
-                        // b.style("font-size", currentSize+"pt")
-                        
-                        // b.attribute('motionTimer', timer+1)
-                        // console.log(b.attribute('motionTimer'))
+                  
                     } else {
                         
                         b.attribute('status', 'normal')
@@ -981,6 +958,7 @@ const Visual = () =>{
                 b.style('color', buttonColor.toString())
                 // b.style('background-color', buttonColor.toString())
             })  
+
             droneNodes.forEach((d, i)=>{
                 if(i===0 && d.age%3===0){
                     masterLvl = d.droneSource.masterMeter.getValue()
@@ -1017,6 +995,36 @@ const Visual = () =>{
         }
     }
 
+    const setRateParams = (val) => {
+        if(droneNodes.length>0){
+            droneNodes.forEach((dn)=>{
+                dn.droneSource.rateControlParams.forEach((param)=>{
+                    if(param.type==="signal"){
+                        param.param.linearRampTo(scale(val, 0, 100, param.min, param.max), 0.25)
+                    }
+                })
+            })
+        }
+    }
+
+    const setDepthParams = (val) => {
+        console.log("DEPTH SET TO " + val)
+            if(droneNodes.length>0){
+                droneNodes.forEach((dn)=>{
+                    dn.modInterval = scale(val, 0, 100, dn.ogModInterval * 4, dn.ogModInterval / 2)
+                    
+                    dn.droneSource.depthControlParams.forEach((param)=>{
+                        let targetVal = scale(val, 0, 100, param.min, param.max)
+                        if(param.type==="signal"){
+                            console.log()
+                            param.param.linearRampTo(targetVal, 0.25)
+                        } else {
+                            param.param = targetVal
+                        }
+                    })
+                })
+            }
+        }
     
 
     const blendParams = () => {
@@ -1061,11 +1069,15 @@ const Visual = () =>{
 
     return (
         <div>
-            {/* <button onClick={blendParams}>blend</button>
-            <button onClick={scatterParams}>scatter</button> */}
-            {/* <input type="range" onChange={blendParams}/> */}
-            {/* <button onClick={newZone}>RELOAD</button> */}
+            
             {<ReactP5Wrapper key={renderNum} sketch={sketch} />}
+            <Menu>
+                <Item name="🔄" function={newZone}/>
+                <Item name="🎛️">
+                    <input type="range" onChange={(e)=>{setDepthParams(e.target.value)}}/>
+                    <input type="range" onChange={(e)=>{setRateParams(e.target.value)}}/>
+                </Item>
+            </Menu>
         </div>
     )
 }
