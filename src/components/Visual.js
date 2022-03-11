@@ -6,6 +6,8 @@ import {Vector} from "p5"
 import ambience from '../audio/ambience.mp3'
 import Menu, {Item} from './Menu'
 import scale from './Scale'
+import styled from 'styled-components'
+import {isMobile} from 'react-device-detect'
 
 //since pulse as a class hasn't been working, try pulses as an array of objects {pulseLifespan, pulseAge, magnitude, target color, id}
 const Visual = () =>{
@@ -16,6 +18,7 @@ const Visual = () =>{
     // const [canvas, setCanvas] = useState(null)
     const harmonicities = [1., 1., 1., 1., 1.25, 1.3333, 1.5, 2., 2., 2., 4., 0.666, 3., 2.5, 0.5, 0.5, 0.75]
     
+    const [volCtl, setVolCtl] = useState(30)
     const [renderNum, setRenderNum] = useState(0)
     // const [homogeneity, setHomogeneity] = useState(0)
     const infoText = `Drone Flower is an audiovisual experience generator. Watch and listen as the shapes and sounds evolve endlessly. Interact by clicking shapes or changing parameters in the 🎛️ menu.`
@@ -25,10 +28,18 @@ const Visual = () =>{
     let volumeSlider
     let player1 
     let initTint = 20
+
+    let volVal = useRef(75)
+    let depthVal = useRef(25)
+    let rateVal = useRef(25)
     useEffect(()=>{
         console.log("wrapper returned")
         // setLoaded(true)
     }, [])
+   
+    // let volSlider
+    // let rateSlider
+    // let depthSlider
 
     // useEffect(()=>{
     //     console.log("canvas: " + canvas)
@@ -46,15 +57,18 @@ const Visual = () =>{
     //     return arr;
     // }
     
+    const rndColorVal = () => {return Math.floor(Math.random()*256)}
+    let bgHue = [rndColorVal(), rndColorVal(), rndColorVal()]
+
     const sketch = (p5) =>{
-        const rndColorVal = () => {return Math.floor(Math.random()*256)}
+        
         const blendingModes = [p5.BLEND, p5.BLEND, p5.HARD_LIGHT,] //p5.LIGHTEST, p5.HARD_LIGHT] //p5.DIFFERENCE, p5.EXCLUSION,]// p5.HARD_LIGHT,]// p5.BURN,]
         const echoBlendingModes = [p5.BLEND, p5.SOFT_LIGHT, p5.SOFT_LIGHT, p5.HARD_LIGHT, p5.BURN,]
 
         
         let width = p5.windowWidth
         let height = p5.windowHeight
-        let bgColor = p5.color(rndColorVal(), rndColorVal(), rndColorVal(), 255)    
+        let bgColor = p5.color(bgHue[0], bgHue[1], bgHue[2], 255)    
         let age = 0        
 
         const frameRate = 25
@@ -909,12 +923,15 @@ const Visual = () =>{
 
             p5.blendMode(p5.BLEND)
             if(volSlider){
+                volSlider.value(volVal.current)
                 setVolume(volSlider.value()/100)
             }
             if(rateSlider){
+                rateSlider.value(rateVal.current)
                 p5.setRateParams(rateSlider.value())
             }
             if(depthSlider){
+                depthSlider.value(depthVal.current)
                 p5.setDepthParams(depthSlider.value())
             }
             
@@ -996,6 +1013,7 @@ const Visual = () =>{
     }
 
     const setRateParams = (val) => {
+        rateValue = val
         if(droneNodes.length>0){
             droneNodes.forEach((dn)=>{
                 dn.droneSource.rateControlParams.forEach((param)=>{
@@ -1008,6 +1026,7 @@ const Visual = () =>{
     }
 
     const setDepthParams = (val) => {
+        depthValue = val
         console.log("DEPTH SET TO " + val)
             if(droneNodes.length>0){
                 droneNodes.forEach((dn)=>{
@@ -1067,15 +1086,31 @@ const Visual = () =>{
         })
     }
 
+    const setParams = (e) => {
+        // e.preventDefault()
+        console.log("PARAM EVENT: ", e)
+        let paramName = e.target.name
+        setUiParams({...uiParams, paramName: e.target.value})
+    }
+
+    const getVal = (val) => {
+        return val.current
+    }
+    
+
     return (
         <div>
             
             {<ReactP5Wrapper key={renderNum} sketch={sketch} />}
-            <Menu>
-                <Item name="🔄" function={newZone}/>
+            <Menu color={bgHue} itemFontSize={(isMobile ? 12 : 25)+"pt"} contentFontSize={(isMobile ? 8 : 16)+"pt"}>
+                <Item name="🔄" onClick={newZone}/>
                 <Item name="🎛️">
-                    <input type="range" onChange={(e)=>{setDepthParams(e.target.value)}}/>
-                    <input type="range" onChange={(e)=>{setRateParams(e.target.value)}}/>
+                    <CtlParam><p>🔇</p><input type="range" name="vol" defaultValue={(volVal.current)} onChange={(e)=>{volVal.current = e.target.value}}/><p>🔊</p></CtlParam>
+                    <CtlParam><p>💧</p><input type="range" name="depth" defaultValue={depthVal.current} onChange={(e)=>{depthVal.current = e.target.value}}/><p>🌊</p></CtlParam>
+                    <CtlParam><p>☁️</p><input type="range" name="rate" defaultValue={rateVal.current} onChange={(e)=>{rateVal.current = e.target.value}}/><p>💨</p></CtlParam>
+                </Item>
+                <Item name="ℹ️">
+                    <p style={{width: "35vw", textAlign: "left"}}>Drone Flower is an audiovisual experience generator. Watch and listen as the shapes and sounds evolve endlessly. Interact by clicking shapes or changing parameters in the 🎛️ menu.<br/> <br/> Made by Asher Bay with Tone.js (sound) and P5.js (visuals).</p>
                 </Item>
             </Menu>
         </div>
@@ -1083,3 +1118,14 @@ const Visual = () =>{
 }
 export default React.memo(Visual)
 
+const CtlParam = styled.div`
+    display: flex;
+    gap: 10px;
+    line-height: 5px;
+`
+
+
+
+// volSlider = p5.controlParam(controlMenu, "🔇", "🔊")
+// depthSlider = p5.controlParam(controlMenu, "💧", "🌊")
+// rateSlider = p5.controlParam(controlMenu, "☁️", "💨")
