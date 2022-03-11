@@ -42,7 +42,7 @@ const Menu = (props) => {
     }
 
   return (
-    <Container style={{color: props.textColor}}>
+    <Container open={openIn} style={{color: props.textColor}}>
         <Icon src={openIn ? xIcon : barsIcon} onClick={toggleMenu} style={{background: props.color}}/>
       <CSSTransition key={1} in={openIn} timeout={{ enter: 500, exit: 500 }} classNames="open" onExited={()=>{setOpen(false)}}>
         <ItemGroup show={open} itemFontSize={props.itemFontSize} contentFontSize={props.contentFontSize}>
@@ -163,7 +163,10 @@ const Icon = styled.img`
 const Container = styled.div`
     display: flex;
     flex-direction: column;
-
+    opacity: ${props => props.open ? 100 : 30}%;
+    &:hover{
+        opacity: 100%;
+    }
     align-items: start;
     z-index: 1;
     position: absolute;
