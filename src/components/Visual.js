@@ -1112,7 +1112,7 @@ const Visual = () =>{
                     <CtlParam><p>☁️</p><input type="range" name="rate" defaultValue={rateVal.current} onChange={(e)=>{rateVal.current = e.target.value}}/><p>💨</p></CtlParam>
                 </Item>
                 <Item name="ℹ️">
-                    <p style={{width: "35vw", textAlign: "left"}}>Drone Flower is an audiovisual experience generator. Watch and listen as the shapes and sounds evolve endlessly. Interact by clicking shapes or changing parameters in the 🎛️ menu.<br/> <br/> Made by Asher Bay with Tone.js (sound) and P5.js (visuals).</p>
+                    <p style={{width: (isMobile ? 60 : 35)+"vw", textAlign: "left", fontSize: (isMobile ? 12 : 16)+"pt"}}>Drone Flower is an audiovisual experience generator. Watch and listen as the shapes and sounds evolve endlessly. Interact by clicking shapes or changing parameters in the 🎛️ menu.<br/> <br/> Made by Asher Bay with Tone.js (sound) and P5.js (visuals).</p>
                 </Item>
             </Menu>
         </div>

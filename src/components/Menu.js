@@ -137,7 +137,7 @@ const ItemGroup = styled.div`
     
     display: inline;
     position: absolute;
-    top: ${isMobile ? 25 : 47}px;
+    top: ${isMobile ? 47 : 47}px;
     flex-direction: column;
     visibility: ${props => props.show ? "visible" : "hidden"};
 
@@ -155,7 +155,7 @@ const ItemGroup = styled.div`
 `
 
 const Icon = styled.img`
-    width: ${isMobile ? 25 : 47}px;
+    width: ${isMobile ? 47 : 47}px;
     &:hover{
         cursor: pointer;
     }
