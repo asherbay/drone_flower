@@ -1097,13 +1097,15 @@ const Visual = () =>{
         return val.current
     }
     
-
+    const rgbColor = (rgbArray) => {
+        return `rgb(${rgbArray[0]}, ${rgbArray[1]}, ${rgbArray[2]})`
+    }
     return (
         <div>
             
             {<ReactP5Wrapper key={renderNum} sketch={sketch} />}
-            <Menu color={bgHue} itemFontSize={(isMobile ? 12 : 25)+"pt"} contentFontSize={(isMobile ? 8 : 16)+"pt"}>
-                <Item name="🔄" onClick={newZone}/>
+            <Menu color={"black"} textColor="white" itemFontSize={(isMobile ? 12 : 25)+"pt"} contentFontSize={(isMobile ? 8 : 16)+"pt"}>
+                <Item name="🔄" function={()=>{window.location.reload(true)}}/>
                 <Item name="🎛️">
                     <CtlParam><p>🔇</p><input type="range" name="vol" defaultValue={(volVal.current)} onChange={(e)=>{volVal.current = e.target.value}}/><p>🔊</p></CtlParam>
                     <CtlParam><p>💧</p><input type="range" name="depth" defaultValue={depthVal.current} onChange={(e)=>{depthVal.current = e.target.value}}/><p>🌊</p></CtlParam>

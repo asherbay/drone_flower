@@ -23,6 +23,13 @@ const Menu = (props) => {
     }
  */ 
 
+    const setAlpha = (rgbArray, alpha) => {
+        return `rgba(${rgbArray[0]}, ${rgbArray[1]}, ${rgbArray[2]}, ${alpha})`
+    }
+    const oppositeHue = (rgbArray) => {
+        return [255-rgbArray[0], 255-rgbArray[1], 255-rgbArray[2]]
+    }
+
     const select = () => {
         setSelItem()
     }
@@ -35,14 +42,14 @@ const Menu = (props) => {
     }
 
   return (
-    <Container>
-        <Icon src={openIn ? xIcon : barsIcon} onClick={toggleMenu}/>
+    <Container style={{color: props.textColor}}>
+        <Icon src={openIn ? xIcon : barsIcon} onClick={toggleMenu} style={{background: props.color}}/>
       <CSSTransition key={1} in={openIn} timeout={{ enter: 500, exit: 500 }} classNames="open" onExited={()=>{setOpen(false)}}>
         <ItemGroup show={open} itemFontSize={props.itemFontSize} contentFontSize={props.contentFontSize}>
             {props.children.map((c, i)=>{
                 console.log("CHILD TYPE: ", c)
                 //FIX THIS MENU IT'S VERY CLOSE
-                return <Item key={i} index={i} name={c.props.name} select={setSelItem} selItem={selItem} parentOpen={openIn} style={{display: "inline", position: "absolute", top: i * 50+"px", }}>{c.props.children} </Item>
+                return <Item key={i} index={i} name={c.props.name} function={c.props.function} select={setSelItem} selItem={selItem} parentOpen={openIn} color={props.color} style={{display: "inline", position: "absolute", top: i * 50+"px", }}>{c.props.children} </Item>
             })}
         </ItemGroup>
       </CSSTransition>
@@ -68,7 +75,7 @@ export const Item = (props) => {
 
     // close when parent menu closes
     useEffect(()=>{
-        console.log("PARENT STATUS: ", props.parentOpen)
+        console.log("PARENT STATUS: ", props.color)
         if(!props.parentOpen ){
             setOpen(false)
         }
@@ -83,11 +90,23 @@ export const Item = (props) => {
         }
     }, [sel])
 
+
+    const setAlpha = (rgbArray, alpha) => {
+        return `rgba(${rgbArray[0]}, ${rgbArray[1]}, ${rgbArray[2]}, ${alpha})`
+    }
+    const oppositeHue = (rgbArray) => {
+        return [255-rgbArray[0], 255-rgbArray[1], 255-rgbArray[2]]
+    }
+
     const toggleItem = () => {
+        if(props.function){
+            props.function()
+            return
+        }
         if(!sel){
-            
-            setSel(true)
             props.select(props.index)
+            setSel(true)
+            
             
         } else {
             setOpen(false)
@@ -96,14 +115,13 @@ export const Item = (props) => {
 
     return (
         <div ref={contents} style={{display: "flex"}}>
-            <div onClick={toggleItem} style={{display: "inline", float: "left",  padding: "7px", background: "rgba(255, 255, 255, 1)", zIndex: 1}}>
+            <div className="tab" onClick={toggleItem} style={{display: "inline", float: "left",  padding: "7px", backgroundColor: props.color, zIndex: 1, }} >
                 {props.name}
             </div>
             { 
             <CSSTransition key={props.name} in={open} timeout={{ enter: 500, exit: 500 }} classNames="openSub" onExited={()=>{
                 setSel(false)
-
-            }} style={{background: "rgba(255, 255, 255, 1)", paddingLeft: "20px", paddingRight: "10px", marginLeft: "45px", position: "absolute", top: props.index * 50+"px"}}>
+            }} style={{backgroundColor: props.color, paddingLeft: "20px", paddingRight: "10px", marginLeft: "45px", position: "absolute", top: props.index * 55+"px"}}>
                 <ItemGroup show={sel} id={props.name}>
                     {props.children}
                 </ItemGroup>
@@ -113,31 +131,39 @@ export const Item = (props) => {
 }
 
 
+
+
 const ItemGroup = styled.div`
-    
-   
     
     display: inline;
     position: absolute;
-    top: ${isMobile ? 25 : 50}px;
+    top: ${isMobile ? 25 : 47}px;
     flex-direction: column;
-    
     visibility: ${props => props.show ? "visible" : "hidden"};
+
+    .tab:hover{
+            cursor: pointer;
+        }
+        
     
     
     &>*{
         font-size: ${props => props.contentFontSize ? props.contentFontSize : 16}pt;
         margin-right: 5px;
+        
     }
 `
 
 const Icon = styled.img`
-    width: ${isMobile ? 25 : 50}px;
-    
+    width: ${isMobile ? 25 : 47}px;
+    &:hover{
+        cursor: pointer;
+    }
 `
 const Container = styled.div`
     display: flex;
     flex-direction: column;
+
     align-items: start;
     z-index: 1;
     position: absolute;
